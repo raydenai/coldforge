@@ -1,0 +1,39 @@
+project: upmax-ai-outreach
+release_target: release-a
+phase: foundation
+status: planned
+updated_at: null
+
+mission: >-
+  Replace Mailscale and Instantly with a safe native Upmax campaign engine over
+  Winnr, then convert qualified replies into GHL appointments through CloseBot.
+
+verified_baseline:
+  repository: https://github.com/raydenai/coldforge
+  commit: f55ecef1694a1b9d224a94cf62ca43d4bc71974a
+  commit_claim: "feat: Complete Wave 1-4 - Production ready release"
+  tests: "312 passed, 9 failed, 321 total"
+  lint: "38 errors, 172 warnings"
+  build: "fails during TypeScript validation: Map maximum size exceeded"
+  integration_tests: "in-memory mock; no real Supabase/Redis/provider path"
+  ci: "no workflows found"
+  critical_gaps:
+    - missing unsubscribe handler for generated URLs
+    - webhook verification can be bypassed when secrets are absent
+    - production env template omits referenced variables
+    - provider and billing placeholders remain
+
+release_gates:
+  foundation: blocked
+  event_spine: blocked
+  staging_email_loop: blocked
+  reply_to_booking: blocked
+  security: blocked
+  pilot: blocked
+
+active_tasks: []
+blocked_tasks: []
+decisions_needed: []
+risks: []
+last_integrated_commit: null
+next_action: "Execute FND-001 and create the dependency-aware Foundation task graph."
