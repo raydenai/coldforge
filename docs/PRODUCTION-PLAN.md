@@ -36,10 +36,34 @@ describe this tree. Waves 1–4 of the roadmap are unstarted.
    `List-Unsubscribe` header to pair it with. Every commercial email this system
    sends today advertises one-click unsubscribe, points nowhere, and omits the
    header that makes the advertisement valid.
-2. **No pre-send suppression check.** The only occurrence of `unsubscribed` in
-   the send path is `src/lib/queue/processors/campaign.ts:765`, which *counts*
-   unsubscribes for statistics. Nothing gates a send on suppression, bounce,
-   complaint, or opt-out state.
+2. **Suppression is partial, non-atomic, and not on every send path.**
+   *(Corrected 2026-08-24 — an earlier revision of this document claimed no
+   suppression check existed at all. That was wrong; it was grepped from the
+   campaign path rather than the SMTP queue path.)*
+
+   What exists: `email_suppressions` (migration `010_smtp_infrastructure.sql`,
+   present in generated types), `isEmailSuppressed()` at
+   `src/lib/smtp/queue.ts:279` checking email + `is_active` + global-or-workspace
+   scope, called before send at line 302, and `src/lib/smtp/webhooks.ts:360`
+   writing suppressions on bounce/complaint.
+
+   What is wrong with it:
+   - **Not atomic.** The check is a separate `SELECT` before the send, so a
+     suppression written between check and send is missed. SEC-006 and CAM-007
+     require one atomic transaction; this is a time-of-check/time-of-use gap.
+   - **Only guards `email_queue`.** `src/lib/warmup/*`,
+     `src/app/api/inbox/[id]/reply/route.ts` and
+     `src/app/api/replies/[id]/respond/route.ts` call `sendEmail()` directly with
+     no suppression check at all.
+   - **No unsubscribe writes into it.** Only bounce and complaint do, because
+     there is no unsubscribe endpoint to record one.
+
+3. **The campaign send path is a stub that reports success.**
+   `src/app/api/sending/process/route.ts:317` computes the email and discards it
+   with `void prepareEmail(...)`, then sets `const sendSuccess = true` and writes
+   `status: 'sent'` with a generated message_id to `email_jobs`. Nothing is sent.
+   This is a placeholder on a production path, which the constitution prohibits
+   (FND-012).
 
 Together these are a CAN-SPAM exposure and a Gmail/Yahoo bulk-sender compliance
 failure. They are items 3 and 3 respectively — nothing ships past them.

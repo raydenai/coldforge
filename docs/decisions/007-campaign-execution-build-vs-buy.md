@@ -35,8 +35,17 @@ Verified state of the codebase as of 2026-08-24 (`docs/BASELINE-FND-001.md`,
   times have no DDL anywhere in the repository.
 - **No unsubscribe endpoint exists**, while `src/lib/sending/sender.ts:242` emits
   `List-Unsubscribe-Post` — and no `List-Unsubscribe` header to pair with it.
-- **No pre-send suppression check exists.** The only `unsubscribed` reference in
-  the send path counts them for statistics.
+- **Suppression exists but is partial and non-atomic.** *(Corrected 2026-08-24;
+  an earlier revision of this ADR claimed no check existed.)* `email_suppressions`
+  and a pre-send `isEmailSuppressed()` guard the `email_queue` path
+  (`src/lib/smtp/queue.ts:279,302`). But the check is a separate SELECT before the
+  send (time-of-check/time-of-use gap, versus the atomic transaction SEC-006
+  requires), it does not guard the warmup or reply send paths which call
+  `sendEmail()` directly, and nothing writes unsubscribes into it because there is
+  no unsubscribe endpoint.
+- **The campaign send path is a stub.** `src/app/api/sending/process/route.ts:317`
+  discards the prepared email via `void prepareEmail(...)`, hardcodes
+  `sendSuccess = true`, and writes `status: 'sent'` without sending.
 - Three competing send paths exist (`src/lib/sending/`, `src/lib/smtp/queue.ts`,
   `src/lib/queue/processors/campaign.ts`).
 
