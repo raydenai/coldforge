@@ -14,7 +14,24 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SuppressionReason } from './suppression'
 
-export type ClaimRefusal = SuppressionReason | 'duplicate' | 'invalid_email' | 'error'
+export type ClaimRefusal =
+  | SuppressionReason
+  | 'duplicate'
+  | 'invalid_email'
+  | 'frequency_cap'
+  | 'error'
+
+/**
+ * Default cross-campaign frequency cap.
+ *
+ * Counted per recipient per tenant across ALL campaigns, because a recipient
+ * does not experience three campaigns as three relationships — they experience
+ * one sender mailing them three times.
+ */
+export const DEFAULT_FREQUENCY_CAP = {
+  maxPerWindow: 3,
+  windowHours: 168, // 7 days
+} as const
 
 export interface ClaimResult {
   allowed: boolean
@@ -65,8 +82,12 @@ export async function claimSendSlot(input: {
   workspaceId: string
   campaignId?: string
   leadId?: string
+  /** Cross-campaign cap. Pass `{ maxPerWindow: 0 }` to disable. */
+  frequencyCap?: { maxPerWindow: number; windowHours?: number }
 }): Promise<ClaimResult> {
   const supabase = createAdminClient()
+
+  const cap = input.frequencyCap ?? DEFAULT_FREQUENCY_CAP
 
   const { data, error } = await supabase.rpc('claim_send_slot', {
     p_idempotency_key: input.idempotencyKey,
@@ -74,6 +95,8 @@ export async function claimSendSlot(input: {
     p_workspace_id: input.workspaceId,
     p_campaign_id: input.campaignId ?? null,
     p_lead_id: input.leadId ?? null,
+    p_max_per_window: cap.maxPerWindow,
+    p_window_hours: cap.windowHours ?? DEFAULT_FREQUENCY_CAP.windowHours,
   })
 
   if (error) {

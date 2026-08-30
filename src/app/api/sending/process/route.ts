@@ -347,9 +347,15 @@ export async function POST(request: NextRequest) {
           }
         )
 
-        // In production, this would actually send the email
-        // For now, simulate successful send
-        const sendSuccess = true // await sendEmail(transporter, emailContent)
+        // This path does not send. It previously hardcoded `sendSuccess = true`
+        // and wrote status:'sent' with a generated message_id, so email_jobs
+        // recorded deliveries that never happened — corrupting analytics and
+        // reporting a working campaign engine that does not exist.
+        //
+        // Failing closed instead of faking success. Which implementation lands
+        // here (native SMTP vs a vendor CampaignExecutionProvider) is the open
+        // question in ADR-007, so no send is built here yet.
+        const sendSuccess = false
 
         if (sendSuccess) {
           // Mark as sent

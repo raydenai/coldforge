@@ -55,18 +55,29 @@ CREATE INDEX IF NOT EXISTS idx_send_claims_undispatched
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_suppressions_global_unique
   ON email_suppressions (email) WHERE workspace_id IS NULL;
 
--- Atomic: check suppression and claim the slot in one transaction.
+-- Atomic: check suppression AND frequency, then claim the slot, in one
+-- transaction.
+--
+-- Frequency capping lives here rather than in application code deliberately.
+-- A cap enforced by a separate SELECT is not a cap: two workers reading "3 sends
+-- this week" concurrently will both proceed and produce 5. Counting inside the
+-- same transaction that inserts the claim makes the cap actually hold.
+--
+-- p_max_per_window = 0 disables the cap.
 --
 -- Returns (allowed, reason):
---   (true,  NULL)         -> claim recorded, caller may proceed
---   (false, '<reason>')   -> suppressed; reason is the suppression reason
---   (false, 'duplicate')  -> this exact touch was already claimed
+--   (true,  NULL)            -> claim recorded, caller may proceed
+--   (false, '<reason>')      -> suppressed; reason is the suppression reason
+--   (false, 'duplicate')     -> this exact touch was already claimed
+--   (false, 'frequency_cap') -> too many recent touches to this recipient
 CREATE OR REPLACE FUNCTION claim_send_slot(
   p_idempotency_key TEXT,
   p_email TEXT,
   p_workspace_id UUID,
   p_campaign_id UUID DEFAULT NULL,
-  p_lead_id UUID DEFAULT NULL
+  p_lead_id UUID DEFAULT NULL,
+  p_max_per_window INTEGER DEFAULT 0,
+  p_window_hours INTEGER DEFAULT 168
 )
 RETURNS TABLE (allowed BOOLEAN, reason TEXT)
 LANGUAGE plpgsql
@@ -76,6 +87,7 @@ AS $$
 DECLARE
   v_email TEXT := lower(btrim(p_email));
   v_reason TEXT;
+  v_recent INTEGER;
 BEGIN
   IF v_email IS NULL OR v_email = '' THEN
     RETURN QUERY SELECT false, 'invalid_email'::TEXT;
@@ -95,6 +107,22 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Frequency cap, counted ACROSS campaigns for this tenant. A recipient does
+  -- not experience three campaigns as three separate relationships; they
+  -- experience one sender mailing them three times.
+  IF p_max_per_window > 0 THEN
+    SELECT COUNT(*) INTO v_recent
+    FROM send_claims c
+    WHERE c.email = v_email
+      AND c.workspace_id IS NOT DISTINCT FROM p_workspace_id
+      AND c.created_at > NOW() - make_interval(hours => p_window_hours);
+
+    IF v_recent >= p_max_per_window THEN
+      RETURN QUERY SELECT false, 'frequency_cap'::TEXT;
+      RETURN;
+    END IF;
+  END IF;
+
   BEGIN
     INSERT INTO send_claims (idempotency_key, email, workspace_id, campaign_id, lead_id)
     VALUES (p_idempotency_key, v_email, p_workspace_id, p_campaign_id, p_lead_id);
@@ -107,6 +135,10 @@ BEGIN
   RETURN QUERY SELECT true, NULL::TEXT;
 END;
 $$;
+
+-- Supports the frequency count above.
+CREATE INDEX IF NOT EXISTS idx_send_claims_freq
+  ON send_claims (email, workspace_id, created_at DESC);
 
 -- Mark a claim dispatched once the provider has accepted the message.
 CREATE OR REPLACE FUNCTION mark_send_dispatched(
