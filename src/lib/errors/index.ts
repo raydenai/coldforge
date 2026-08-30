@@ -73,7 +73,7 @@ export class AuthorizationError extends AppError {
  * Used when a requested resource doesn't exist
  */
 export class NotFoundError extends AppError {
-  constructor(resource: string, id?: string) {
+  constructor(resource: string = 'Resource', id?: string) {
     super(
       id ? `${resource} with id '${id}' not found` : `${resource} not found`,
       'NOT_FOUND',
@@ -108,13 +108,24 @@ export class RateLimitError extends AppError {
 
 /**
  * External service errors (502/503)
- * Used when external services fail
+ * Used when external services fail.
+ *
+ * `cause` accepts either an explicit message or the underlying error that was
+ * caught. When omitted, a generic message naming the service is used so the
+ * error is still safe to surface without leaking provider internals.
  */
 export class ExternalServiceError extends AppError {
   public readonly service: string
 
-  constructor(service: string, message: string, details?: Record<string, unknown>) {
-    super(message, 'EXTERNAL_SERVICE_ERROR', 502, true, { service, ...details })
+  constructor(service: string, cause?: string | Error, details?: Record<string, unknown>) {
+    const originalMessage = cause instanceof Error ? cause.message : cause
+    super(
+      typeof cause === 'string' ? cause : `External service error: ${service}`,
+      'EXTERNAL_SERVICE_ERROR',
+      502,
+      true,
+      { service, originalMessage, ...details }
+    )
     this.service = service
   }
 }
