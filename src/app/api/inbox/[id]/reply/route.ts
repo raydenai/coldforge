@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createTransporter, sendEmail, type EmailContent } from '@/lib/sending'
 import { decryptObject } from '@/lib/encryption'
+import { canReplyToInbound } from '@/lib/compliance/suppression'
 import { google } from 'googleapis'
 import { getGoogleOAuthClient, refreshGoogleToken } from '@/lib/google'
 import { refreshMicrosoftToken } from '@/lib/microsoft'
@@ -384,6 +385,26 @@ export async function POST(
 
     // Plain text version
     const textBody = message.replace(/<[^>]*>/g, '')
+
+    // Suppression gate, placed before the provider switch so it covers the
+    // Gmail, Outlook and SMTP branches alike. This path previously called
+    // sendEmail() with no suppression check at all.
+    //
+    // Narrower than the campaign gate by design: an unsubscribe does not bar
+    // replying to someone who wrote to us, but a complaint or spam trap does.
+    if (organizationId) {
+      const replyEligibility = await canReplyToInbound(
+        thread.participant_email,
+        organizationId
+      )
+
+      if (!replyEligibility.eligible) {
+        return NextResponse.json(
+          { error: 'Cannot send to this recipient', reason: replyEligibility.reason },
+          { status: 409 }
+        )
+      }
+    }
 
     // Send email based on provider
     let sendResult: { success: boolean; messageId?: string; error?: string }

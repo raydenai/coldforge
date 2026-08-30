@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createTransporter, sendEmail, type EmailContent } from '@/lib/sending'
+import { canReplyToInbound } from '@/lib/compliance/suppression'
 
 // POST /api/replies/[id]/respond - Send response to a reply
 export async function POST(
@@ -109,6 +110,25 @@ export async function POST(
         'In-Reply-To': reply.message_id,
         'References': reply.message_id,
       },
+    }
+
+    // Suppression gate. This path called sendEmail() directly with no check at
+    // all. Narrower than the campaign gate: an unsubscribe does not bar
+    // answering someone who wrote to us, but a complaint or spam trap does.
+    // See canReplyToInbound() for the policy and its reasoning.
+    const replyEligibility = await canReplyToInbound(
+      reply.from_email,
+      profile.organization_id
+    )
+
+    if (!replyEligibility.eligible) {
+      return NextResponse.json(
+        {
+          error: 'Cannot send to this recipient',
+          reason: replyEligibility.reason,
+        },
+        { status: 409 }
+      )
     }
 
     // Send the email

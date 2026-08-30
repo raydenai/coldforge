@@ -160,3 +160,57 @@ export async function isSuppressed(
 export function isPermanentReason(reason: SuppressionReason): boolean {
   return PERMANENT_REASONS.has(reason)
 }
+
+/**
+ * Reasons that block even a direct 1:1 reply to an inbound message.
+ *
+ * This is deliberately NARROWER than the campaign gate, and the distinction is a
+ * policy decision worth stating plainly:
+ *
+ *   - `complaint` / `spam_trap` — the recipient reported us. Sending anything
+ *     further, including a reply, compounds the reputation and legal damage.
+ *   - `hard_bounce` / `invalid` — the address does not accept mail. Retrying
+ *     wastes reputation on a known-bad recipient.
+ *   - `unsubscribe` is NOT here. An opt-out withdraws consent for *commercial*
+ *     mail. If that person then writes to us, answering their own message is a
+ *     transactional response they initiated, not a marketing touch. Refusing to
+ *     answer a customer who emailed us would be poor service and is not required
+ *     by CAN-SPAM.
+ *   - `role_based` / `manual` / `soft_bounce` are campaign-targeting decisions,
+ *     not conversation bans.
+ *
+ * If policy changes, change it here — every reply path reads this one set.
+ */
+const REPLY_BLOCKING_REASONS: ReadonlySet<SuppressionReason> = new Set([
+  'complaint',
+  'spam_trap',
+  'hard_bounce',
+  'invalid',
+])
+
+/**
+ * May we send a direct reply to someone who contacted us?
+ *
+ * Fails CLOSED on lookup error, same as the campaign gate.
+ */
+export async function canReplyToInbound(
+  email: string,
+  workspaceId: string
+): Promise<EligibilityResult> {
+  const result = await isSuppressed(email, workspaceId)
+
+  // Lookup error: refuse.
+  if (result.reason === 'error') return result
+
+  // Not suppressed at all.
+  if (result.eligible) return result
+
+  const reason = result.reason as SuppressionReason
+
+  if (REPLY_BLOCKING_REASONS.has(reason)) {
+    return { eligible: false, reason, detail: 'reply blocked by suppression' }
+  }
+
+  // Suppressed for a reason that does not bar conversation.
+  return { eligible: true }
+}
