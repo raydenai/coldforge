@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { scheduleEmail, scheduleMultiple, getNextSendWindow, ScheduledEmail } from '@/lib/sending/scheduler'
 import { AuthenticationError, BadRequestError, ValidationError } from '@/lib/errors'
 import { handleApiError } from '@/lib/errors/handler'
+import { isValidTimeZone } from '@/lib/compliance/sending-window'
 import { z } from 'zod'
 
 // Schema for single email scheduling
@@ -112,6 +113,23 @@ export async function GET(request: NextRequest) {
     const timezone = searchParams.get('timezone') || 'UTC'
     const startHour = parseInt(searchParams.get('startHour') || '9', 10)
     const endHour = parseInt(searchParams.get('endHour') || '17', 10)
+
+    // getNextSendWindow now rejects an unknown timezone instead of silently
+    // falling back to server-local time. Surface that as a 400 rather than a 500,
+    // since it is caller input.
+    if (!isValidTimeZone(timezone)) {
+      throw new ValidationError('Unknown timezone', { timezone })
+    }
+
+    if (
+      !Number.isInteger(startHour) ||
+      !Number.isInteger(endHour) ||
+      startHour < 0 ||
+      endHour > 24 ||
+      startHour >= endHour
+    ) {
+      throw new ValidationError('Invalid send window hours', { startHour, endHour })
+    }
 
     const nextWindow = getNextSendWindow(timezone, { start: startHour, end: endHour })
 

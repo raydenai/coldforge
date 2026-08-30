@@ -1,4 +1,5 @@
 import { addJob } from '@/lib/queue'
+import { nextSendWindowStart, DEFAULT_SEND_WINDOW } from '@/lib/compliance/sending-window'
 
 export interface ScheduledEmail {
   to: string
@@ -17,15 +18,28 @@ export async function scheduleEmail(email: ScheduledEmail): Promise<string> {
   return job.id || ''
 }
 
-export function getNextSendWindow(_timezone: string, preferredHours = { start: 9, end: 17 }): Date {
-  const now = new Date()
-  // Simple implementation - find next business hour in timezone
-  const hour = now.getHours()
-  if (hour >= preferredHours.start && hour < preferredHours.end) return now
-  const next = new Date(now)
-  next.setHours(preferredHours.start, 0, 0, 0)
-  if (hour >= preferredHours.end) next.setDate(next.getDate() + 1)
-  return next
+/**
+ * Next instant at which sending is permitted, in the RECIPIENT's timezone.
+ *
+ * The previous implementation accepted a timezone and ignored it, computing
+ * hours from `now.getHours()` — the server's wall clock. A recipient in
+ * Asia/Tokyo would be mailed at 03:00 local from a US-hosted worker. Quiet hours
+ * are a policy control, so that was a compliance defect, not just a
+ * deliverability one.
+ *
+ * Throws on an unknown timezone rather than falling back to server-local time,
+ * because that fallback is precisely the original bug and it fails silently.
+ */
+export function getNextSendWindow(
+  timezone: string,
+  preferredHours = { start: 9, end: 17 },
+  from: Date = new Date()
+): Date {
+  return nextSendWindowStart(from, timezone, {
+    startHour: preferredHours.start,
+    endHour: preferredHours.end,
+    days: DEFAULT_SEND_WINDOW.days,
+  })
 }
 
 export async function scheduleMultiple(emails: ScheduledEmail[], spreadMinutes = 60): Promise<string[]> {
