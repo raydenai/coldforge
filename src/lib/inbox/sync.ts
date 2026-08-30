@@ -135,7 +135,7 @@ export async function syncAccount(
   }
 
   // Get or create sync state
-  let syncState = await getSyncState(accountId)
+  const syncState = await getSyncState(accountId)
 
   // Mark sync as in progress
   await updateSyncState(accountId, { status: 'syncing' })

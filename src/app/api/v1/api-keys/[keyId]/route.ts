@@ -54,7 +54,7 @@ export const GET = withAPIMiddleware(
     // Include stats if requested
     const includeStats = request.nextUrl.searchParams.get('include') === 'stats';
 
-    let response: Record<string, unknown> = {
+    const response: Record<string, unknown> = {
       id: key.id,
       name: key.name,
       keyPrefix: key.keyPrefix,

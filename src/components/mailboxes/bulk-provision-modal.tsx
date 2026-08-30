@@ -358,7 +358,7 @@ export function BulkProvisionModal({
             <DialogHeader>
               <DialogTitle>Provisioning Mailboxes...</DialogTitle>
               <DialogDescription>
-                This may take a few minutes. Please don't close this window.
+                This may take a few minutes. Please don&rsquo;t close this window.
               </DialogDescription>
             </DialogHeader>
 

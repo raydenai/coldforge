@@ -15,6 +15,25 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 
+/**
+ * Read the leading text block out of an Anthropic response.
+ *
+ * Throws rather than returning a fallback: a non-text first block means the
+ * model returned something we did not ask for, and silently warming with an
+ * empty body would corrupt engagement metrics.
+ */
+function extractReplyText(response: Anthropic.Message): string {
+  const block = response.content[0];
+
+  if (!block || block.type !== 'text') {
+    throw new Error(
+      `Anthropic response did not start with a text block (received: ${block?.type ?? 'empty content'})`
+    );
+  }
+
+  return block.text.trim();
+}
+
 // Reply types
 export type ReplyType =
   | 'acknowledgment'
@@ -154,7 +173,7 @@ Generate ONLY the reply body text. No greeting or signature.`;
       ]
     });
 
-    const generatedBody = (response.content[0] as any).text.trim();
+    const generatedBody = extractReplyText(response);
     const generationTime = Date.now() - startTime;
 
     // Calculate spam score for the generated reply
@@ -293,7 +312,7 @@ function templateFallback(options: ReplyOptions, startTime: number): GeneratedRe
   const template = templates[Math.floor(Math.random() * templates.length)];
 
   // Simple variable replacement
-  let body = template.body
+  const body = template.body
     .replace(/\{sender\}/g, options.senderName)
     .replace(/\{recipient\}/g, options.recipientName);
 
@@ -434,7 +453,7 @@ Only output the email body, no greeting or signature.`;
       messages: [{ role: 'user', content: initialPrompt }]
     });
 
-    const initialBody = (initialResponse.content[0] as any).text.trim();
+    const initialBody = extractReplyText(initialResponse);
     const subject = generateSubjectFromTopic(topic);
 
     thread.push({

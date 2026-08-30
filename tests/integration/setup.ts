@@ -58,7 +58,7 @@ export function clearTestDataStore() {
 
 export function createE2ESupabaseClient() {
   const createQueryBuilder = (tableName: string) => {
-    let filters: Record<string, unknown> = {}
+    const filters: Record<string, unknown> = {}
     let selectFields = '*'
     let insertData: Record<string, unknown> | null = null
     let updateData: Record<string, unknown> | null = null

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const result = await processEmailBatch(limit);
 
     // Process retries if enabled
-    let retryResult = { processed: 0, successful: 0, failed: 0 };
+    const retryResult = { processed: 0, successful: 0, failed: 0 };
     if (includeRetries) {
       const retryEmails = await getEmailsForRetry(Math.floor(limit / 4));
       for (const email of retryEmails) {

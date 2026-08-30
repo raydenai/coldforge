@@ -485,7 +485,7 @@ export async function getMetricBreakdown(
 
   const field = dimensionField[dimension];
 
-  let query = supabase
+  const query = supabase
     .from('analytics_events')
     .select(field)
     .eq('workspace_id', workspaceId)

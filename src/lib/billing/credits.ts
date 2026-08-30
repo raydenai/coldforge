@@ -206,8 +206,11 @@ export async function addCredits(
   return { success: true, newBalance };
 }
 
-// Use credits
-export async function useCredits(
+// Consume credits.
+// Deliberately not named `useCredits`: this is a server-side function, and a
+// `use` prefix makes React's rules-of-hooks lint treat every call site as a
+// hook call.
+export async function consumeCredits(
   workspaceId: string,
   amount: number,
   options: {
@@ -283,7 +286,7 @@ export async function useCreditsForAction(
   const costPerUnit = CREDIT_COSTS[action];
   const totalCost = costPerUnit * quantity;
 
-  const result = await useCredits(workspaceId, totalCost, {
+  const result = await consumeCredits(workspaceId, totalCost, {
     description: `${action} x ${quantity}`,
     referenceType: action,
     referenceId,

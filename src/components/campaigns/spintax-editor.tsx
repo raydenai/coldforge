@@ -361,14 +361,14 @@ export function SpintaxInput({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
-  const [variationCount, setVariationCount] = useState<number | null>(null);
+  const [count, setCount] = useState<number | null>(null);
   const debouncedValue = useDebounce(value, 500);
+  const hasSpintax = Boolean(debouncedValue) && debouncedValue.includes('{');
 
   useEffect(() => {
-    if (!debouncedValue || !debouncedValue.includes('{')) {
-      setVariationCount(null);
-      return;
-    }
+    if (!hasSpintax) return;
+
+    let cancelled = false;
 
     const validate = async () => {
       try {
@@ -380,7 +380,8 @@ export function SpintaxInput({
 
         if (response.ok) {
           const data = await response.json();
-          setVariationCount(data.count);
+          // Ignore a response that lost the race to a newer request.
+          if (!cancelled) setCount(data.count);
         }
       } catch (error) {
         console.error('Count failed:', error);
@@ -388,7 +389,15 @@ export function SpintaxInput({
     };
 
     validate();
-  }, [debouncedValue]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedValue, hasSpintax]);
+
+  // Derived during render rather than written back in the effect, so the badge
+  // never shows a stale count for text that no longer contains spintax.
+  const variationCount = hasSpintax ? count : null;
 
   return (
     <div className="relative">

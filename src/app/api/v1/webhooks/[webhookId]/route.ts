@@ -63,7 +63,7 @@ export const GET = withAPIMiddleware(
     // Include deliveries if requested
     const includeDeliveries = request.nextUrl.searchParams.get('include') === 'deliveries';
 
-    let response: Record<string, unknown> = {
+    const response: Record<string, unknown> = {
       id: webhook.id,
       name: webhook.name,
       url: webhook.url,

@@ -403,7 +403,7 @@ export async function getWebhookDeliveries(
   const supabase = await createClient();
   const { limit = 50, offset = 0, status } = options;
 
-  let query = supabase
+  const query = supabase
     .from('webhook_delivery_attempts')
     .select('*', { count: 'exact' })
     .eq('webhook_id', webhookId)

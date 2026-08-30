@@ -21,6 +21,7 @@ import { getEngagementEngine, EngagementAction } from './engagement-engine';
 import { getPostmasterClient, DomainReputation } from './postmaster-tools';
 import { createTransporter, sendEmail } from '@/lib/sending/sender';
 import { decrypt } from '@/lib/encryption';
+import type { UpdateTables } from '@/types/database';
 
 // Redis connection for BullMQ
 const redisConnection = {
@@ -690,7 +691,7 @@ export class WarmupOrchestrator {
       const simulatedReply = action === 'reply' && Math.random() > 0.4;
 
       // Update email record
-      const updates: any = {};
+      const updates: UpdateTables<'warmup_emails'> = {};
       if (simulatedOpen) {
         updates.opened_at = new Date().toISOString();
         updates.status = 'opened';

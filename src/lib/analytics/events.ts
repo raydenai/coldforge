@@ -158,7 +158,7 @@ export async function countEventsByType(
 
   const { dateRange } = resolveDateRange(options.dateRange, options.timeRange);
 
-  let query = supabase.rpc('count_events_by_type', {
+  const query = supabase.rpc('count_events_by_type', {
     p_workspace_id: workspaceId,
     p_start_date: dateRange.startDate.toISOString(),
     p_end_date: dateRange.endDate.toISOString(),
@@ -424,7 +424,7 @@ export function resolveDateRange(
   const now = new Date();
   const endDate = new Date(now);
   let startDate: Date;
-  let period: string = timeRange || '30d';
+  const period: string = timeRange || '30d';
 
   switch (timeRange) {
     case 'today':

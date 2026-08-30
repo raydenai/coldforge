@@ -67,6 +67,30 @@ export interface RampScheduleEntry {
   actualDelivered?: number;
 }
 
+// Shapes of the database rows this module reads.
+//
+// Declared locally because `warmup_sessions`, `warmup_daily_stats` and the
+// account-reputation table are among the tables missing from the generated
+// `src/types/database.ts` (see docs/BASELINE-FND-001.md). Replace these with the
+// generated Row types once schema and types are reconciled.
+export interface WarmupSessionRow {
+  started_at: string;
+  last_activity_at?: string | null;
+}
+
+export interface WarmupDailyStatRow {
+  emails_sent?: number | null;
+  emails_delivered?: number | null;
+  emails_opened?: number | null;
+  emails_replied?: number | null;
+  bounces?: number | null;
+  spam_reports?: number | null;
+}
+
+export interface AccountReputationRow {
+  overall_score?: number | null;
+}
+
 // Default ramp profiles
 export const RAMP_PROFILES: Record<RampProfile, Omit<RampConfig, 'maxDailyVolume'>> = {
   conservative: {
@@ -302,7 +326,7 @@ export class SlowRampController {
   /**
    * Get warmup session for account
    */
-  private async getWarmupSession(accountId: string): Promise<any> {
+  private async getWarmupSession(accountId: string): Promise<WarmupSessionRow | null> {
     const supabase = await this.ensureInitialized();
 
     const { data, error } = await supabase
@@ -314,7 +338,10 @@ export class SlowRampController {
       .limit(1)
       .single();
 
-    return error ? null : data;
+    // Boundary cast: `warmup_sessions` is absent from the generated Database
+    // type, so supabase-js cannot infer this row. Remove once schema and types
+    // are reconciled (docs/BASELINE-FND-001.md).
+    return error ? null : (data as unknown as WarmupSessionRow);
   }
 
   /**
@@ -348,11 +375,18 @@ export class SlowRampController {
       .order('date', { ascending: false })
       .limit(7);
 
-    // Calculate aggregated metrics
-    const metrics = this.calculateMetrics(dailyStats || []);
+    // Calculate aggregated metrics.
+    // Boundary cast: `warmup_daily_stats` is absent from the generated Database
+    // type (docs/BASELINE-FND-001.md).
+    const metrics = this.calculateMetrics((dailyStats || []) as unknown as WarmupDailyStatRow[]);
 
-    // Determine if paused and why
-    const { isPaused, pauseReason } = this.checkPauseConditions(reputation, metrics);
+    // Determine if paused and why.
+    // Boundary cast: `sender_reputation` is absent from the generated Database
+    // type (docs/BASELINE-FND-001.md).
+    const { isPaused, pauseReason } = this.checkPauseConditions(
+      (reputation as unknown as AccountReputationRow | null) ?? null,
+      metrics
+    );
 
     // Calculate day number
     const dayNumber = session
@@ -378,7 +412,7 @@ export class SlowRampController {
   /**
    * Calculate aggregated metrics from daily stats
    */
-  private calculateMetrics(dailyStats: any[]): RampStatus['metrics'] {
+  private calculateMetrics(dailyStats: WarmupDailyStatRow[]): RampStatus['metrics'] {
     const totals = {
       sent: 0,
       delivered: 0,
@@ -416,14 +450,17 @@ export class SlowRampController {
    * Check if warmup should be paused
    */
   private checkPauseConditions(
-    reputation: any,
+    reputation: AccountReputationRow | null,
     metrics: RampStatus['metrics']
   ): { isPaused: boolean; pauseReason: string | null } {
-    // Check health score
-    if (reputation?.overall_score < this.config.healthPauseThreshold) {
+    // Check health score. An unknown reputation is treated as healthy, matching
+    // getRampStatus(); previously this relied on `undefined < threshold` being
+    // false, which only worked because the parameter was untyped.
+    const healthScore = reputation?.overall_score ?? 100;
+    if (healthScore < this.config.healthPauseThreshold) {
       return {
         isPaused: true,
-        pauseReason: `Health score dropped to ${reputation.overall_score}% (threshold: ${this.config.healthPauseThreshold}%)`
+        pauseReason: `Health score dropped to ${healthScore}% (threshold: ${this.config.healthPauseThreshold}%)`
       };
     }
 

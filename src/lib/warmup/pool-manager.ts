@@ -59,7 +59,7 @@ export interface WarmupPoolAccount {
   last_health_check: string | null;
   cooldown_until: string | null;
   created_at: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // Credentials structure for pool accounts
@@ -287,7 +287,7 @@ export class WarmupPoolManager {
       tier?: PoolTier;
       dailySendLimit?: number;
       dailyReceiveLimit?: number;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     } = {}
   ): Promise<WarmupPoolAccount | null> {
     const supabase = await this.ensureInitialized();

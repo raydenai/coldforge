@@ -43,7 +43,7 @@ export function generateVariation(tokens: SpintaxToken[], index: number): string
       const optionCounts = token.options.map(opt => countVariations(opt));
       const totalOptions = optionCounts.reduce((a, b) => a + b, 0);
 
-      let optionIndex = currentIndex % totalOptions;
+      const optionIndex = currentIndex % totalOptions;
       currentIndex = Math.floor(currentIndex / totalOptions);
 
       // Find which option this index falls into

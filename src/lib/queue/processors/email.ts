@@ -468,7 +468,7 @@ export async function processEmailJob(job: Job<EmailJobData>): Promise<EmailJobR
 
     // Prepare email content
     let htmlContent = isPlainText ? `<pre style="font-family: inherit;">${body}</pre>` : body
-    let textContent = isPlainText ? body : htmlToPlainText(body)
+    const textContent = isPlainText ? body : htmlToPlainText(body)
 
     // Sanitize HTML
     htmlContent = sanitizeHtml(htmlContent)

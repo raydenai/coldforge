@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useSyncExternalStore } from "react"
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -11,16 +11,23 @@ import {
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
+// Canonical "have we hydrated yet" subscription: returns false during SSR and
+// on the hydration pass, true afterwards. Replaces a setState-in-effect mount
+// flag, which triggers a cascading re-render.
+const emptySubscribe = () => () => {}
+const useHasHydrated = () =>
+  useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  )
+
 const Toaster = ({ ...props }: ToasterProps) => {
-  const [mounted, setMounted] = useState(false)
+  const hasHydrated = useHasHydrated()
   const { theme } = useTheme()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Avoid hydration mismatch by not rendering until mounted
-  if (!mounted) {
+  // Avoid hydration mismatch by not rendering until hydrated
+  if (!hasHydrated) {
     return null
   }
 

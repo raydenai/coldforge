@@ -84,6 +84,13 @@ export interface ReputationHistory {
   averageReputation: ReputationLevel;
 }
 
+// A single reputation alert raised by checkAlerts()
+export interface ReputationAlert {
+  type: string;
+  message: string;
+  severity: 'warning' | 'critical';
+}
+
 // Alert configuration
 export interface AlertConfig {
   reputationDropThreshold: ReputationLevel;
@@ -132,7 +139,7 @@ export function scoreToReputation(score: number): ReputationLevel {
  * Google Postmaster Tools Client
  */
 export class PostmasterToolsClient {
-  private auth: any;
+  private auth: InstanceType<typeof google.auth.OAuth2> | null = null;
   private initialized: boolean = false;
   private cachedDomains: string[] = [];
   private cacheTimestamp: number = 0;
@@ -162,19 +169,22 @@ export class PostmasterToolsClient {
   }
 
   /**
-   * Ensure client is initialized
+   * Ensure client is initialized and hand back the authenticated client.
+   * Returning it (rather than asserting void) lets callers pass a non-nullable
+   * `auth` to googleapis, which rejects `null`.
    */
-  private ensureInitialized(): void {
-    if (!this.initialized) {
+  private requireAuth(): InstanceType<typeof google.auth.OAuth2> {
+    if (!this.initialized || !this.auth) {
       throw new Error('Postmaster Tools client not initialized. Call initialize() first.');
     }
+    return this.auth;
   }
 
   /**
    * List verified domains
    */
   async listDomains(): Promise<string[]> {
-    this.ensureInitialized();
+    const auth = this.requireAuth();
 
     // Check cache
     if (this.cachedDomains.length > 0 && Date.now() - this.cacheTimestamp < this.CACHE_TTL) {
@@ -183,7 +193,7 @@ export class PostmasterToolsClient {
 
     try {
       const response = await postmaster.domains.list({
-        auth: this.auth
+        auth
       });
 
       const domains = response.data.domains?.map(d => d.name?.replace('domains/', '') || '') || [];
@@ -203,11 +213,11 @@ export class PostmasterToolsClient {
    * Get traffic stats for a domain on a specific date
    */
   async getTrafficStats(domain: string, date: string): Promise<TrafficStats | null> {
-    this.ensureInitialized();
+    const auth = this.requireAuth();
 
     try {
       const response = await postmaster.domains.trafficStats.get({
-        auth: this.auth,
+        auth,
         name: `domains/${domain}/trafficStats/${date}`
       });
 
@@ -217,21 +227,25 @@ export class PostmasterToolsClient {
         domain,
         date,
         userReportedSpamRatio: data.userReportedSpamRatio || 0,
-        ipReputations: (data.ipReputations || []).map((ip: any) => ({
-          ip: ip.ip || '',
-          reputation: (ip.reputation as ReputationLevel) || 'UNKNOWN',
-          sampleIps: ip.sampleIps || []
-        })),
+        ipReputations: (data.ipReputations || []).map(
+          (ip: { ip?: string | null; reputation?: string | null; sampleIps?: string[] | null }) => ({
+            ip: ip.ip || '',
+            reputation: (ip.reputation as ReputationLevel) || 'UNKNOWN',
+            sampleIps: ip.sampleIps || []
+          })
+        ),
         domainReputation: (data.domainReputation as ReputationLevel) || 'UNKNOWN',
         spfSuccessRatio: data.spfSuccessRatio || 0,
         dkimSuccessRatio: data.dkimSuccessRatio || 0,
         dmarcSuccessRatio: data.dmarcSuccessRatio || 0,
         outboundEncryptionRatio: data.outboundEncryptionRatio || 0,
         inboundEncryptionRatio: data.inboundEncryptionRatio || 0,
-        deliveryErrors: (data.deliveryErrors || []).map((e: any) => ({
-          errorType: e.errorType || 'UNKNOWN',
-          errorRatio: e.errorRatio || 0
-        }))
+        deliveryErrors: (data.deliveryErrors || []).map(
+          (e: { errorType?: string | null; errorRatio?: number | null }) => ({
+            errorType: e.errorType || 'UNKNOWN',
+            errorRatio: e.errorRatio || 0
+          })
+        )
       };
     } catch (error) {
       console.error(`Failed to get traffic stats for ${domain}:`, error);
@@ -299,7 +313,7 @@ export class PostmasterToolsClient {
    * Get reputation history for last N days
    */
   async getReputationHistory(domain: string, days: number = 30): Promise<ReputationHistory> {
-    this.ensureInitialized();
+    this.requireAuth();
 
     const history: ReputationHistory['history'] = [];
 
@@ -358,7 +372,7 @@ export class PostmasterToolsClient {
     config: AlertConfig = DEFAULT_ALERT_CONFIG
   ): Promise<Array<{ type: string; message: string; severity: 'warning' | 'critical' }>> {
     const reputation = await this.getDomainReputation(domain);
-    const alerts: Array<{ type: string; message: string; severity: 'warning' | 'critical' }> = [];
+    const alerts: ReputationAlert[] = [];
 
     if (!reputation) {
       return [{
@@ -454,13 +468,13 @@ export class PostmasterToolsClient {
   async syncAllDomains(): Promise<{
     synced: number;
     failed: number;
-    alerts: Array<{ domain: string; alerts: any[] }>;
+    alerts: Array<{ domain: string; alerts: ReputationAlert[] }>;
   }> {
     const domains = await this.listDomains();
     const result = {
       synced: 0,
       failed: 0,
-      alerts: [] as Array<{ domain: string; alerts: any[] }>
+      alerts: [] as Array<{ domain: string; alerts: ReputationAlert[] }>
     };
 
     for (const domain of domains) {
@@ -540,7 +554,7 @@ export async function initializePostmasterTools(): Promise<PostmasterToolsClient
 export async function getReputationSummary(accountId: string): Promise<{
   current: DomainReputation | null;
   history: ReputationHistory | null;
-  alerts: any[];
+  alerts: ReputationAlert[];
   lastUpdated: string;
 }> {
   const supabase = await createClient();

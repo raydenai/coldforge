@@ -346,7 +346,7 @@ export class ImapSyncProvider implements SyncProvider {
    */
   private decodeContent(content: string, encoding: string): string {
     // Clean up the content first
-    let cleanContent = content.replace(/--[\w-]+--?\s*$/g, '').trim()
+    const cleanContent = content.replace(/--[\w-]+--?\s*$/g, '').trim()
 
     switch (encoding.toLowerCase()) {
       case 'base64':
