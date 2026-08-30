@@ -1,5 +1,6 @@
 # Multi-stage build for Next.js
-FROM node:20-alpine AS base
+# Node 24 LTS — keep in sync with .nvmrc, package.json "engines" and CI.
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -9,8 +10,10 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Full install: the builder stage runs `next build`, which needs
+# devDependencies (next, typescript, tailwind). The runner stage does not reuse
+# these — it copies the standalone bundle, which carries only what runtime needs.
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder

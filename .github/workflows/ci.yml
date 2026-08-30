@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # Fast gates that are green today. These must stay green.
+  quality:
+    name: Lint and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Report Node and npm versions
+        run: node -v && npm -v
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+  # Gates that are known-red on the current baseline.
+  #
+  # They are NOT marked continue-on-error and NOT excluded: a red signal here is
+  # the accurate one, and it is the tracking mechanism for the work below.
+  #   - typecheck: `tsc --noEmit` crashes with "Map maximum size exceeded" via
+  #     src/lib/billing/invoices.ts, and 1156 further type errors sit behind it.
+  #     Root cause and evidence: docs/BASELINE-FND-001.md (FND-004).
+  #   - build: blocked by the same typecheck failure.
+  #
+  # Do not silence these to make CI green. They go green when the schema/type
+  # drift is reconciled.
+  typecheck-and-build:
+    name: Typecheck and build (known-red, tracks FND-004)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build

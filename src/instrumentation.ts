@@ -7,6 +7,12 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Validate configuration before anything else starts. Throws in production
+    // so a misconfigured deployment fails at boot rather than at the first
+    // request that touches a missing secret.
+    const { validateEnv } = await import('@/lib/env')
+    validateEnv()
+
     // Server-side Sentry initialization
     const { initSentry } = await import('@/lib/sentry')
     initSentry()
