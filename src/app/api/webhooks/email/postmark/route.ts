@@ -2,9 +2,8 @@
 // Processes bounce, spam complaint, delivery, open, and click notifications
 
 import { NextRequest, NextResponse } from 'next/server';
-import { processWebhook, verifyWebhookSignature } from '@/lib/smtp/webhooks';
-
-const POSTMARK_WEBHOOK_TOKEN = process.env.POSTMARK_WEBHOOK_TOKEN || '';
+import { processWebhook } from '@/lib/smtp/webhooks';
+import { resolveWebhookPolicy, safeCompare } from '@/lib/webhooks/verification';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,11 +11,25 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization') || '';
     const webhookToken = request.headers.get('x-postmark-webhook-token') || '';
 
-    // Verify if token is configured
-    if (POSTMARK_WEBHOOK_TOKEN) {
+    // Fail closed: previously an unset POSTMARK_WEBHOOK_TOKEN skipped the check
+    // entirely, leaving this endpoint unauthenticated in every environment
+    // including production.
+    const policy = resolveWebhookPolicy({
+      provider: 'postmark',
+      secret: process.env.POSTMARK_WEBHOOK_TOKEN,
+    });
+
+    if (policy.outcome === 'refuse') {
+      console.error(policy.logMessage);
+      return NextResponse.json({ error: policy.error }, { status: policy.status });
+    }
+
+    if (policy.outcome === 'skip') {
+      console.warn(policy.logMessage);
+    } else {
       const isValid =
-        webhookToken === POSTMARK_WEBHOOK_TOKEN ||
-        authHeader === `Bearer ${POSTMARK_WEBHOOK_TOKEN}`;
+        safeCompare(webhookToken, policy.secret) ||
+        safeCompare(authHeader, `Bearer ${policy.secret}`);
 
       if (!isValid) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

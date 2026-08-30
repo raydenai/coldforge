@@ -1,7 +1,9 @@
 // SMTP Webhook Handlers
 // Process bounce, complaint, and delivery notifications from email providers
 
+import crypto from 'node:crypto';
 import { createClient } from '../supabase/server';
+import { isAwsSnsHostname } from '../webhooks/verification';
 import type { EventType, BounceType, EmailEvent } from './types';
 
 // Webhook payload types for different providers
@@ -377,14 +379,17 @@ export function verifyWebhookSignature(
   signature: string,
   secret: string
 ): boolean {
-  const crypto = require('crypto');
-
   switch (provider) {
     case 'ses':
-      // AWS SNS message signature verification requires certificate validation
-      // This should be called with the full SNS message containing SigningCertURL
-      // For now, we verify in the route handler using verifySnsMessage
-      return true;
+      // SES/SNS authenticates by certificate-backed signature over the whole
+      // message, which this signature-and-secret shape cannot express. Use
+      // verifySnsMessage() instead.
+      //
+      // This previously returned `true`, so any caller passing 'ses' was
+      // silently granted a pass by a function named "verify".
+      throw new Error(
+        'verifyWebhookSignature does not support SES. Use verifySnsMessage() for SNS-delivered SES notifications.'
+      );
 
     case 'sendgrid':
       // SendGrid uses ECDSA signatures with the public key
@@ -461,12 +466,20 @@ const certCache = new Map<string, string>();
 // Verify AWS SNS message signature
 export async function verifySnsMessage(message: SnsMessage): Promise<boolean> {
   try {
-    const crypto = require('crypto');
+    // Validate SigningCertURL is a genuine SNS endpoint.
+    // A bare '.amazonaws.com' suffix check also matches attacker-controlled
+    // hosts such as an S3 bucket, which would let a forged message supply its
+    // own signing certificate and pass verification.
+    let certUrl: URL;
+    try {
+      certUrl = new URL(message.SigningCertURL);
+    } catch {
+      console.error('Malformed SNS certificate URL');
+      return false;
+    }
 
-    // Validate SigningCertURL is from AWS
-    const certUrl = new URL(message.SigningCertURL);
-    if (!certUrl.hostname.endsWith('.amazonaws.com')) {
-      console.error('Invalid SNS certificate URL:', message.SigningCertURL);
+    if (!isAwsSnsHostname(certUrl.hostname)) {
+      console.error('Invalid SNS certificate URL host:', certUrl.hostname);
       return false;
     }
 

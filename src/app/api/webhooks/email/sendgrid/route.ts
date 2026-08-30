@@ -3,12 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { processWebhookBatch, verifyWebhookSignature } from '@/lib/smtp/webhooks';
-
-const SENDGRID_WEBHOOK_SECRET = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY || '';
-
-// Require signature verification in production
-const REQUIRE_VERIFICATION = process.env.NODE_ENV === 'production' ||
-  process.env.VERIFY_SENDGRID_SIGNATURES === 'true';
+import { resolveWebhookPolicy } from '@/lib/webhooks/verification';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,26 +14,29 @@ export async function POST(request: NextRequest) {
     // Build full signature string for verification
     const fullSignature = timestamp ? `t=${timestamp},v1=${signature}` : signature;
 
-    // Verify webhook signature
-    if (REQUIRE_VERIFICATION) {
-      if (!SENDGRID_WEBHOOK_SECRET) {
-        console.error('SendGrid webhook secret not configured');
-        return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
-      }
+    // Fail closed. Previously verification only ran in production, and outside
+    // production a FAILED signature was logged and then processed anyway.
+    const policy = resolveWebhookPolicy({
+      provider: 'sendgrid',
+      secret: process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY,
+    });
+
+    if (policy.outcome === 'refuse') {
+      console.error(policy.logMessage);
+      return NextResponse.json({ error: policy.error }, { status: policy.status });
+    }
+
+    if (policy.outcome === 'skip') {
+      console.warn(policy.logMessage);
+    } else {
       if (!signature) {
         console.error('Missing SendGrid webhook signature');
         return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
       }
-      const isValid = verifyWebhookSignature('sendgrid', body, fullSignature, SENDGRID_WEBHOOK_SECRET);
+      const isValid = verifyWebhookSignature('sendgrid', body, fullSignature, policy.secret);
       if (!isValid) {
         console.error('SendGrid webhook signature verification failed');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
-    } else if (SENDGRID_WEBHOOK_SECRET && signature) {
-      // Optional verification in development
-      const isValid = verifyWebhookSignature('sendgrid', body, fullSignature, SENDGRID_WEBHOOK_SECRET);
-      if (!isValid) {
-        console.warn('SendGrid webhook signature verification failed (non-production, continuing)');
       }
     }
 

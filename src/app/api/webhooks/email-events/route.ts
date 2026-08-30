@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { classifyBounce } from '@/lib/deliverability'
-import crypto from 'crypto'
+import { resolveWebhookPolicy, safeCompare } from '@/lib/webhooks/verification'
+import crypto from 'node:crypto'
 
 // POST /api/webhooks/email-events - Webhook for email provider events
 export async function POST(request: NextRequest) {
@@ -10,48 +11,56 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature using HMAC-SHA256
     const signature = request.headers.get('x-webhook-signature')
     const timestamp = request.headers.get('x-webhook-timestamp')
-    const webhookSecret = process.env.EMAIL_WEBHOOK_SECRET
 
     // Get raw body for signature verification
     const rawBody = await request.clone().text()
 
-    // Require signature verification in production
-    const requireVerification = process.env.NODE_ENV === 'production' ||
-      process.env.VERIFY_EMAIL_WEBHOOKS === 'true'
+    // Fail closed: an absent secret refuses the request rather than skipping
+    // verification. This endpoint suppresses leads and mutates campaign stats,
+    // so an unauthenticated caller must never reach the handler below.
+    const policy = resolveWebhookPolicy({
+      provider: 'email-events',
+      secret: process.env.EMAIL_WEBHOOK_SECRET,
+    })
 
-    if (requireVerification && webhookSecret) {
+    if (policy.outcome === 'refuse') {
+      console.error(policy.logMessage)
+      return NextResponse.json({ error: policy.error }, { status: policy.status })
+    }
+
+    if (policy.outcome === 'skip') {
+      console.warn(policy.logMessage)
+    } else {
       if (!signature) {
         return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
       }
 
-      // Verify timestamp is recent (within 5 minutes) to prevent replay attacks
-      if (timestamp) {
-        const timestampAge = Math.abs(Date.now() - parseInt(timestamp, 10))
-        if (timestampAge > 5 * 60 * 1000) {
-          return NextResponse.json({ error: 'Timestamp expired' }, { status: 401 })
-        }
+      // Replay protection. A signed payload without a timestamp can be replayed
+      // forever, so the timestamp is required rather than merely checked when
+      // present.
+      if (!timestamp) {
+        return NextResponse.json({ error: 'Missing timestamp' }, { status: 401 })
+      }
+
+      const parsedTimestamp = Number.parseInt(timestamp, 10)
+      if (!Number.isFinite(parsedTimestamp)) {
+        return NextResponse.json({ error: 'Invalid timestamp' }, { status: 401 })
+      }
+
+      const timestampAge = Math.abs(Date.now() - parsedTimestamp)
+      if (timestampAge > 5 * 60 * 1000) {
+        return NextResponse.json({ error: 'Timestamp expired' }, { status: 401 })
       }
 
       // Compute expected signature
-      const signPayload = timestamp ? `${timestamp}.${rawBody}` : rawBody
       const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(signPayload)
+        .createHmac('sha256', policy.secret)
+        .update(`${timestamp}.${rawBody}`)
         .digest('hex')
 
-      // Use timing-safe comparison
-      try {
-        const sigBuffer = Buffer.from(signature)
-        const expectedBuffer = Buffer.from(expectedSignature)
-        if (sigBuffer.length !== expectedBuffer.length ||
-            !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-        }
-      } catch {
-        return NextResponse.json({ error: 'Invalid signature format' }, { status: 401 })
+      if (!safeCompare(signature, expectedSignature)) {
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
-    } else if (webhookSecret && !signature && process.env.NODE_ENV === 'development') {
-      console.warn('Webhook received without signature in development mode')
     }
 
     // Parse the body (we already have it from signature verification)
