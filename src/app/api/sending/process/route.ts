@@ -17,6 +17,7 @@ import {
   addRateLimitHeaders,
 } from '@/lib/rate-limit/middleware'
 import { invalidateAnalyticsCache, invalidateDashboardCache } from '@/lib/cache/queries'
+import { buildUnsubscribeUrl } from '@/lib/compliance/unsubscribe-token'
 
 interface JobRecord {
   id: string
@@ -311,7 +312,19 @@ export async function POST(request: NextRequest) {
 
         // Prepare email content
         const trackingBaseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        const unsubscribeUrl = `${trackingBaseUrl}/unsubscribe?lead=${job.lead_id}&campaign=${job.campaign_id}`
+        // Signed token, not raw ids. The previous shape
+        // (`?lead=<uuid>&campaign=<uuid>`) was unauthenticated, so anyone
+        // holding one email could forge opt-outs for other recipients.
+        //
+        // NOTE: this path carries `organization_id` while `email_suppressions`
+        // references `workspaces(id)`. That is the dual-tenancy split recorded
+        // in docs/PRODUCTION-PLAN.md item 4; the tenant id is passed through
+        // verbatim here and must be remapped when tenancy consolidates.
+        const unsubscribeUrl = buildUnsubscribeUrl(trackingBaseUrl, {
+          leadId: job.lead_id,
+          campaignId: job.campaign_id,
+          workspaceId: job.organization_id,
+        })
 
         // Prepare email content (currently unused - will be used for actual sending)
         void prepareEmail(

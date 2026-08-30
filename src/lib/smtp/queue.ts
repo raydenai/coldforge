@@ -4,6 +4,12 @@
 import { createClient } from '../supabase/server';
 import { decrypt } from '../encryption';
 import { sendEmail, verifyProvider } from './client';
+import {
+  claimSendSlot,
+  markDispatched,
+  releaseSendClaim,
+  buildAdHocKey,
+} from '@/lib/compliance/send-eligibility';
 import type {
   QueuedEmail,
   QueueStatus,
@@ -298,7 +304,9 @@ async function isEmailSuppressed(
 export async function processQueuedEmail(
   queuedEmail: QueuedEmail
 ): Promise<SendResult> {
-  // Check suppression first
+  // Defence in depth, layer 1: cheap suppression read.
+  // Kept deliberately. It short-circuits the common case without an RPC, and it
+  // keeps working if migration 019 has not been applied yet.
   const suppressed = await isEmailSuppressed(queuedEmail.toEmail, queuedEmail.workspaceId);
   if (suppressed) {
     await updateQueueStatus(queuedEmail.id, 'cancelled', {
@@ -309,6 +317,35 @@ export async function processQueuedEmail(
     return {
       success: false,
       error: 'Email is suppressed',
+      timestamp: new Date(),
+    };
+  }
+
+  // Defence in depth, layer 2: atomic check-and-claim (SEC-006, CAM-004).
+  //
+  // Layer 1 alone is a time-of-check/time-of-use gap: a suppression written
+  // between that SELECT and this send would be missed. This closes the gap
+  // between check and claim, and the unique idempotency key makes a redelivered
+  // job refuse rather than send twice.
+  //
+  // REQUIRES migration 019_send_eligibility.sql. Fails closed if absent.
+  const claim = await claimSendSlot({
+    idempotencyKey: buildAdHocKey('reply', queuedEmail.id, 'queue'),
+    email: queuedEmail.toEmail,
+    workspaceId: queuedEmail.workspaceId,
+  });
+
+  if (!claim.allowed) {
+    // 'duplicate' means another worker already owns this touch — cancelling is
+    // correct, and deliberately not a retry.
+    await updateQueueStatus(queuedEmail.id, 'cancelled', {
+      success: false,
+      error: `Send refused: ${claim.reason}`,
+      timestamp: new Date(),
+    });
+    return {
+      success: false,
+      error: `Send refused: ${claim.reason}`,
       timestamp: new Date(),
     };
   }
@@ -362,6 +399,15 @@ export async function processQueuedEmail(
 
   // Send email
   const result = await sendEmail(provider, message);
+
+  // Close out the claim. On success the claim becomes the durable record that
+  // this touch was dispatched; on failure it is released so a retry is not
+  // permanently blocked by its own idempotency key.
+  if (result.success) {
+    await markDispatched(claim.idempotencyKey, result.messageId);
+  } else {
+    await releaseSendClaim(claim.idempotencyKey);
+  }
 
   // Update status
   await updateQueueStatus(

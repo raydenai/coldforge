@@ -3,6 +3,7 @@
 import nodemailer from 'nodemailer'
 import type { EmailContent } from './types'
 import { sendWithRetry, classifySmtpError } from '@/lib/retry/smtp'
+import { buildUnsubscribeHeaders } from '@/lib/compliance/unsubscribe-token'
 
 interface SmtpConfig {
   host: string
@@ -232,15 +233,35 @@ export function sanitizeHtml(html: string): string {
 export function buildHeaders(
   campaignId: string,
   leadId: string,
-  messageId: string
+  messageId: string,
+  options?: {
+    /** Absolute one-click unsubscribe URL. See buildUnsubscribeUrl(). */
+    unsubscribeUrl?: string
+    /** Optional RFC-recommended mailto: fallback. */
+    unsubscribeMailto?: string
+  }
 ): Record<string, string> {
-  return {
+  const headers: Record<string, string> = {
     'X-Campaign-ID': campaignId,
     'X-Lead-ID': leadId,
     'Message-ID': messageId,
     'X-Mailer': 'InstantScale/1.0',
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
   }
+
+  // RFC 8058: List-Unsubscribe-Post is only meaningful alongside a
+  // List-Unsubscribe target. Emitting the Post header alone — which this
+  // function previously did — advertises one-click to Gmail and Yahoo while
+  // giving them nothing to call, and counts against bulk-sender compliance.
+  //
+  // Both headers are emitted together or not at all.
+  if (options?.unsubscribeUrl) {
+    Object.assign(
+      headers,
+      buildUnsubscribeHeaders(options.unsubscribeUrl, options.unsubscribeMailto)
+    )
+  }
+
+  return headers
 }
 
 // Prepare email for sending
@@ -284,7 +305,12 @@ export function prepareEmail(
   }
 
   // Build headers
-  const headers = buildHeaders(options.campaignId, options.leadId, options.messageId)
+  // Pass the unsubscribe URL through so List-Unsubscribe is emitted alongside
+  // the body link. Without it the one-click headers are omitted entirely rather
+  // than advertised-but-broken.
+  const headers = buildHeaders(options.campaignId, options.leadId, options.messageId, {
+    unsubscribeUrl: options.addUnsubscribe ? options.unsubscribeUrl : undefined,
+  })
 
   return {
     ...content,
