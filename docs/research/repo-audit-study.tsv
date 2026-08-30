@@ -1,0 +1,105 @@
+repo	category	claimed_upmax_relevance	claimed_stars	language	description
+obra/superpowers	Agent skills & method	HIGH	262635	Shell	Agentic skills framework & software development methodology
+affaan-m/ECC	Agent skills & method	MED	234679	JavaScript	Agent harness performance optimization: skills, instincts, memory, security
+NousResearch/hermes-agent	Coding agents & harnesses	MED	221846	Python	The agent that grows with you
+forrestchang/andrej-karpathy-skills	Agent skills & method	MED	197166		Single CLAUDE.md derived from Karpathy's LLM coding pitfalls
+mattpocock/skills	Agent skills & method	HIGH	192764	Shell	Skills for Real Engineers
+anomalyco/opencode	Coding agents & harnesses	MED	190503	TypeScript	Open source coding agent
+yt-dlp/yt-dlp	Data, scraping & ingestion	HIGH	180729	Python	CLI audio/video downloader
+microsoft/markitdown	Data, scraping & ingestion	HIGH	169765	Python	Convert files/office docs to Markdown
+anthropics/skills	Agent skills & method	HIGH	164794	Python	Public repository for Agent Skills
+firecrawl/firecrawl	Data, scraping & ingestion	HIGH	157421	TypeScript	API to search, scrape, interact with web at scale
+iptv-org/iptv	Other	NO	134602	TypeScript	Public IPTV channels
+ripienaar/free-for-dev	Infra & self-hosting	MED	130630	HTML	SaaS/PaaS/IaaS free tiers list
+garrytan/gstack	Coding agents & harnesses	HIGH	124964	TypeScript	Garry Tan's Claude Code setup, 23 opinionated tools
+immich-app/immich	Infra & self-hosting	NO	109067	TypeScript	Self-hosted photo/video management
+browser-use/browser-use	Data, scraping & ingestion	HIGH	107114	Python	Make websites accessible for AI agents
+VoltAgent/awesome-design-md	Design & UI quality	HIGH	105121		DESIGN.md files from brand design systems
+harry0703/MoneyPrinterTurbo	Video & creative production	HIGH	99706	Python	Generate HD short videos from topic/keyword
+Graphify-Labs/graphify	Memory & code knowledge	HIGH	97633	Python	Codebase to queryable knowledge graph
+oven-sh/bun	Infra & self-hosting	LOW	95054	Rust	JS runtime, bundler, test runner, package manager
+TauricResearch/TradingAgents	Finance	NO	94875	Python	Multi-agent LLM financial trading
+JuliusBrussee/caveman	Token & context efficiency	MED	93852	JavaScript	Claude Code skill cutting 65% tokens
+DietrichGebert/ponytail	Agent skills & method	MED	90829	JavaScript	Makes agent think like laziest senior dev
+thedotmack/claude-mem	Memory & code knowledge	HIGH	88855	JavaScript	Persistent context across sessions for every agent
+ruvnet/RuView	Other	NO	87232	Rust	WiFi signals to spatial intelligence
+addyosmani/agent-skills	Agent skills & method	HIGH	80766	JavaScript	Production-grade engineering skills for AI coding agents
+OpenCut-app/OpenCut	Video & creative production	MED	79460	TypeScript	Open-source CapCut alternative
+Lum1104/Understand-Anything	Memory & code knowledge	MED	76566	TypeScript	Code to interactive knowledge graph
+koala73/worldmonitor	Other	LOW	75814	TypeScript	Real-time global intelligence dashboard
+AppFlowy-IO/AppFlowy	Business ops & docs	LOW	74453	Dart	Open source Notion alternative
+D4Vinci/Scrapling	Data, scraping & ingestion	HIGH	71617	Python	Adaptive web scraping framework
+Leonxlnx/taste-skill	Design & UI quality	HIGH	68585	JavaScript	Gives AI good taste, stops generic slop
+ruvnet/ruflo	Coding agents & harnesses	MED	66384	TypeScript	Agent meta-harness, multi-player swarms
+warpdotdev/warp	Coding agents & harnesses	LOW	63744	Rust	Agentic development environment
+colbymchenry/codegraph	Memory & code knowledge	HIGH	63094	C	Pre-indexed code knowledge graph, auto-syncs
+chopratejas/headroom	Token & context efficiency	HIGH	62935	Python	Compress tool outputs/logs/RAG before LLM
+pewdiepie-archdaemon/odysseus	Coding agents & harnesses	LOW	62349	Python	Self-hosted AI workspace
+Panniantong/Agent-Reach	Data, scraping & ingestion	HIGH	61509	Python	Read/search Twitter, Reddit, YouTube, GitHub — one CLI
+asgeirtj/system_prompts_leaks	Agent skills & method	MED	61124	JavaScript	Extracted system prompts from major vendors
+ZhuLinsen/daily_stock_analysis	Finance	NO	59412	Python	LLM multi-market stock analysis
+penpot/penpot	Design & UI quality	MED	57597	Clojure	Open-source design platform
+remotion-dev/remotion	Video & creative production	HIGH	54671	TypeScript	Make videos programmatically with React
+mvanhorn/last30days-skill	Marketing, SEO & growth	HIGH	54510	Python	Researches topic across Reddit, X, YouTube, HN, web
+pbakaus/impeccable	Design & UI quality	HIGH	52154	JavaScript	Design language making AI harness better at design
+apple/container	Infra & self-hosting	LOW	48373	Swift	Linux containers via lightweight VMs on Mac
+jamiepine/voicebox	Voice & audio	MED	47219	TypeScript	Open-source AI voice studio
+calcom/cal.diy	Business ops & docs	MED	46959	TypeScript	Scheduling infrastructure for everyone
+Lordog/dive-into-llms	Learning	LOW	45981	Jupyter	LLM programming tutorials
+usestrix/strix	Security	HIGH	45252	Python	Open-source AI penetration testing tool
+rohitg00/ai-engineering-from-scratch	Learning	MED	44566	Python	Learn it. Build it. Ship it.
+calesthio/OpenMontage	Video & creative production	HIGH	43168	Python	Agentic video production system
+Alishahryar1/free-claude-code	Coding agents & harnesses	LOW	42755	Python	Use claude code/codex free from terminal
+multica-ai/multica	Coding agents & harnesses	MED	42365	Go	Open-source managed agents platform
+coreyhaines31/marketingskills	Marketing, SEO & growth	HIGH	42130	JavaScript	Marketing skills: CRO, copywriting, SEO, analytics, growth
+Hmbown/DeepSeek-TUI	Coding agents & harnesses	LOW	40201	Rust	Community-driven agent harness
+Imbad0202/academic-research-skills	Learning	MED	39918	Python	Research to write to review to revise
+siddharthvaddem/openscreen	Video & creative production	HIGH	39864	TypeScript	Screen Studio alternative
+heygen-com/hyperframes	Video & creative production	HIGH	38341	TypeScript	Write HTML, render video, built for agents
+bytedance/UI-TARS-desktop	Coding agents & harnesses	MED	38339	TypeScript	Multimodal AI agent stack
+nextcloud/server	Infra & self-hosting	NO	36281	PHP	Self-hosted cloud
+DeusData/codebase-memory-mcp	Memory & code knowledge	HIGH	36158	C	Code intelligence MCP, persistent knowledge graph
+lfnovo/open-notebook	Learning	MED	36123	TypeScript	Open source NotebookLM
+soxoj/maigret	OSINT	LOW	35901	Python	Dossier on person by username from 3000+ sites
+tinyhumansai/openhuman	Learning	MED	35563	Rust	Local-first memory, agent fleet orchestrator
+shiyu-coder/Kronos	Finance	NO	34817	Python	Foundation model for financial markets
+OpenBMB/VoxCPM	Voice & audio	MED	34401	Python	Tokenizer-free TTS
+gitroomhq/postiz-app	Social & outreach	HIGH	33885	TypeScript	Agentic social media scheduling tool
+anthropics/financial-services	Finance	LOW	33867	Python	—
+diegosouzapw/OmniRoute	Token & context efficiency	MED	32926	TypeScript	AI gateway, 290+ providers, quota-aware fallback
+Yeachan-Heo/oh-my-codex	Coding agents & harnesses	LOW	32276	TypeScript	Hooks, agent teams, HUDs for codex
+stablyai/orca	Coding agents & harnesses	MED	31642	TypeScript	ADE for fleet of parallel agents
+onyx-dot-app/onyx	Business ops & docs	MED	31238	Python	Open source AI platform, chat with every LLM
+HKUDS/DeepTutor	Learning	MED	30867	Python	Lifelong personalized tutoring
+JCodesMore/ai-website-cloner-template	Marketing, SEO & growth	MED	30452	TypeScript	Clone any website with one command
+openai/codex-plugin-cc	Coding agents & harnesses	HIGH	30218	JavaScript	Use Codex from Claude Code to review/delegate
+CloakHQ/CloakBrowser	Data, scraping & ingestion	MED	29303	Python	Stealth Chromium passing bot detection
+supermemoryai/supermemory	Memory & code knowledge	HIGH	28672	TypeScript	Memory and context engine, fast, local-capable
+openai/openai-agents-python	Coding agents & harnesses	MED	28245	Python	Lightweight multi-agent workflow framework
+alibaba/page-agent	Coding agents & harnesses	MED	28059	TypeScript	In-page GUI agent, control web with natural language
+MadsLorentzen/ai-job-search	Learning	LOW	28032	TypeScript	AI job application framework
+virattt/dexter	Finance	LOW	27471	TypeScript	Autonomous agent for financial research
+garrytan/gbrain	Coding agents & harnesses	MED	27275	TypeScript	Garry's opinionated agent brain
+Zackriya-Solutions/meetily	Business ops & docs	MED	27174	Rust	Privacy-first AI meeting assistant
+google-research/timesfm	Data	MED	27143	Python	Time series foundation model
+mukul975/Anthropic-Cybersecurity-Skills	Security	MED	26797	Python	817 cybersecurity skills mapped to 6 frameworks
+google-labs-code/design.md	Design & UI quality	HIGH	26528	TypeScript	Format spec describing visual identity to coding agents
+openai/symphony	Coding agents & harnesses	MED	26283	Elixir	Isolated autonomous implementation runs
+AIDC-AI/Pixelle-Video	Video & creative production	MED	26182	Python	AI automated short video engine
+rohitg00/agentmemory	Memory & code knowledge	HIGH	25926	TypeScript	Persistent memory for AI coding agents
+humanlayer/12-factor-agents	Agent skills & method	HIGH	24904	TypeScript	Principles for production-grade LLM software
+phuryn/pm-skills	Business ops & docs	HIGH	24577		PM skills marketplace, 100+ agentic skills
+yikart/AiToEarn	Marketing, SEO & growth	LOW	24367	TypeScript	Use AI to earn
+google-ai-edge/gallery	Other	LOW	24304	Kotlin	On-device ML/GenAI showcase
+decolua/9router	Token & context efficiency	LOW	23926	JavaScript	Free AI coding via 40+ providers
+EveryInc/compound-engineering-plugin	Agent skills & method	HIGH	23566	TypeScript	Official Compound Engineering plugin
+anthropics/knowledge-work-plugins	Business ops & docs	HIGH	23129	Python	Plugins for knowledge workers in Claude Cowork
+iOfficeAI/OfficeCLI	Business ops & docs	HIGH	22859	C#	Office suite for AI agents (Word/Excel/PowerPoint)
+ogulcancelik/herdr	Coding agents & harnesses	MED	21878	Rust	Agent multiplexer in terminal
+HKUDS/AI-Trader	Finance	NO	21086	Python	Fully-automated agent-native trading
+baidu/Unlimited-OCR	Data, scraping & ingestion	MED	19842	Python	One-shot long-horizon OCR parsing
+mksglu/context-mode	Token & context efficiency	HIGH	19407	TypeScript	Context window optimization, 98% tool output reduction
+Nutlope/hallmark	Design & UI quality	HIGH	19244	CSS	Anti-AI-slop design skill
+steipete/CodexBar	Coding agents & harnesses	MED	19236	Swift	Usage stats for Codex and Claude Code
+simplex-chat/simplex-chat	Other	NO	19104	Haskell	Messaging without user identifiers
+refactoringhq/tolaria	Memory & code knowledge	D-irrelevant	19558-actual	TypeScript	Desktop app to manage markdown knowledge bases (AGPL-3.0). Recovered from truncated paste; row 104. NOTE: study paste ended here — any repos below ~19k stars were never received.
