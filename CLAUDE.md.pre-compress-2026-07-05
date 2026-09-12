@@ -1,13 +1,12 @@
-
 # ColdForge - Cold Email Outreach Platform
 
-> **Cross-Reference**: Mirrored across `CLAUDE.md`, `AGENTS.md`, `GEMINI.md` — same instructions in any AI environment.
+> **Cross-Reference**: This file is mirrored across `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` so the same instructions load in any AI environment.
 
 ---
 
 ## Overview
 
-ColdForge: Instantly.ai campaign management + Mailscale.ai infrastructure automation. Multi-tenant SaaS; 10,000–100,000 emails/day at max deliverability.
+ColdForge is a full-featured cold email outreach platform combining Instantly.ai's campaign management with Mailscale.ai's infrastructure automation. Multi-tenant SaaS for agencies and power users who need to send 10,000-100,000 emails/day with maximum deliverability.
 
 **Core Value**: Automated infrastructure + intelligent sending = inbox placement at scale.
 
@@ -15,18 +14,22 @@ ColdForge: Instantly.ai campaign management + Mailscale.ai infrastructure automa
 
 ## 3-Layer Agent Architecture (DOE Framework)
 
+You operate within a 3-layer architecture that separates concerns to maximize reliability.
+
 ### Layer 1: Directive (What to do)
-- SOPs in `directives/` (Markdown)
-- Goals, inputs, outputs, edge cases
-- **YAML front matter** required: `name`, `description`, `scripts`
+- SOPs written in Markdown, live in `directives/`
+- Define goals, inputs, outputs, and edge cases
+- **Each directive has YAML front matter** with `name`, `description`, and `scripts` fields
 
 ### Layer 2: Orchestration (Decision making)
-- You: read directives, call tools in order, handle errors, clarify
+- This is you. Your job: intelligent routing.
+- Read directives, call execution tools in the right order, handle errors, ask for clarification
+- You're the glue between intent and execution
 
 ### Layer 3: Execution (Doing the work)
-- Deterministic scripts in `execution/` (Python/TypeScript)
-- API calls, data processing, file operations
-- Reliable, testable, fast — prefer scripts over manual
+- Deterministic Python/TypeScript scripts in `execution/`
+- Handle API calls, data processing, file operations
+- Reliable, testable, fast. Use scripts instead of manual work.
 
 ---
 
@@ -69,7 +72,8 @@ instantly-clone/
 │   ├── send_campaign.py
 │   └── check_deliverability.py
 │
-├── .tmp/                # Ephemeral intermediate files (auto-cleaned)
+├── .tmp/                # Ephemeral intermediate files
+│   └── (auto-cleaned)
 │
 ├── config/              # Credentials (git-ignored)
 │   ├── namecheap.json
@@ -77,9 +81,9 @@ instantly-clone/
 │   └── google_workspace.json
 │
 ├── src/                 # Next.js application
-│   ├── app/
-│   ├── components/
-│   └── lib/
+│   ├── app/             # App router
+│   ├── components/      # React components
+│   └── lib/             # Utilities
 │
 ├── supabase/            # Database migrations
 └── tests/               # Test suite
@@ -90,16 +94,16 @@ instantly-clone/
 ## Operating Principles
 
 ### 1. Check for tools first
-Check `execution/` first; create new scripts only if none exist.
+Before writing a script, check `execution/` per your directive. Only create new scripts if none exist.
 
 ### 2. Self-anneal when things break
-- Read error + stack trace
-- Fix the script and test it
+- Read error message and stack trace
+- Fix the script and test it again
 - Update the directive with what you learned
 - System is now stronger
 
 ### 3. Update directives as you learn
-Directives are living docs; update when you discover API constraints, better approaches, errors, or timing issues.
+Directives are living documents. When you discover API constraints, better approaches, common errors, or timing expectations—update the directive.
 
 ---
 
@@ -133,11 +137,18 @@ Directives are living docs; update when you discover API constraints, better app
 Error Occurs → Pattern Match → Auto-Fix → Learn → Update Directive
 ```
 
-When broken: fix → update execution script → test → update directive → system is now stronger.
+When something breaks:
+1. Fix it
+2. Update the execution script
+3. Test the script
+4. Update directive with new flow
+5. System is now stronger
 
 ---
 
-## Deliverability Best Practices (`DELIVERABILITY_STRATEGY.md`)
+## Deliverability Best Practices
+
+Based on `DELIVERABILITY_STRATEGY.md`:
 
 1. **Domain Hygiene**: New domains need 2-4 weeks warmup
 2. **Sending Patterns**: Human-like scheduling (not robotic)
