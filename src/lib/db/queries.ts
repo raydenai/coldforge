@@ -628,47 +628,10 @@ export async function getThreadsWithContext(
   }
 
   // Process threads
-  interface ThreadRow {
-    id: string
-    organization_id: string
-    campaign_id: string | null
-    lead_id: string | null
-    mailbox_id: string
-    subject: string
-    participant_email: string
-    participant_name: string | null
-    message_count: number
-    last_message_at: string
-    status: 'active' | 'resolved' | 'archived'
-    category: ReplyCategory
-    sentiment: ReplySentiment
-    assigned_to: string | null
-    created_at: string
-    updated_at: string
-    leads: {
-      id: string
-      email: string
-      first_name: string | null
-      last_name: string | null
-      company: string | null
-      title: string | null
-    } | null
-    campaigns: {
-      id: string
-      name: string
-    } | null
-    replies: Array<{
-      id: string
-      body_text: string
-      status: ReplyStatus
-      received_at: string
-    }>
-  }
-
   const processedThreads = (data || [])
-    .map((thread: ThreadRow) => {
+    .map(thread => {
       const latestReply = thread.replies?.sort((a, b) =>
-        new Date(b.received_at).getTime() - new Date(a.received_at).getTime()
+        new Date(b.received_at ?? 0).getTime() - new Date(a.received_at ?? 0).getTime()
       )[0]
 
       const hasUnread = thread.replies?.some(r => r.status === 'unread') || false

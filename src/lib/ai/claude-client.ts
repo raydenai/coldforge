@@ -109,7 +109,7 @@ Return ONLY valid JSON, no other text.`;
   });
 
   const content = response.content[0];
-  if (content.type !== 'text') {
+  if (!content || content.type !== 'text') {
     throw new Error('Unexpected response type');
   }
 
@@ -214,7 +214,7 @@ Return ONLY valid JSON with these fields:
   });
 
   const content = response.content[0];
-  if (content.type !== 'text') {
+  if (!content || content.type !== 'text') {
     throw new Error('Unexpected response type');
   }
 

@@ -1,6 +1,6 @@
 // Request logging middleware for Next.js API routes
 import { NextRequest, NextResponse } from 'next/server'
-import { logRequest, logError, generateRequestId, type RequestContext } from './index'
+import { logger, logRequest, logError, generateRequestId, type RequestContext } from './index'
 import {
   createRequestContext,
   runWithContextAsync,
@@ -195,7 +195,6 @@ export function withLogging(
  */
 export function logOperationStart(operation: string, context?: Record<string, unknown>): void {
   const reqContext = getRequestContext()
-  const { logger } = require('./index')
 
   logger.info({
     type: 'operation_start',
@@ -216,9 +215,9 @@ export function logOperationEnd(
   context?: Record<string, unknown>
 ): void {
   const reqContext = getRequestContext()
-  const { logger } = require('./index')
 
-  const log = success ? logger.info : logger.error
+  // Bound: pino's level methods rely on `this`, so a detached reference throws.
+  const log = success ? logger.info.bind(logger) : logger.error.bind(logger)
 
   log({
     type: 'operation_end',

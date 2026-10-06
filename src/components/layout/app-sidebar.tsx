@@ -6,16 +6,15 @@ import {
   LayoutDashboard,
   Send,
   Users,
-  Mail,
   Globe,
-  Flame,
   Inbox,
-  BarChart3,
   Settings,
   Zap,
   ChevronRight,
   Sparkles,
   HelpCircle,
+  CalendarCheck,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -29,14 +28,27 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-const navigationItems = [
+interface NavigationItem {
+  title: string
+  href: string
+  icon: LucideIcon
+  description: string
+  badge?: string | null
+  badgeColor?: string
+}
+
+const navigationItems: NavigationItem[] = [
+  { title: 'Operations', href: '/operations', icon: Zap, description: 'Run and pause daily outreach' },
+  { title: 'Delivery review', href: '/operations/reconciliation', icon: HelpCircle, description: 'Review held email outcomes' },
+  { title: 'Agents', href: '/agents', icon: Sparkles, description: 'Offers, copy and conversation review' },
+  { title: 'Pipeline', href: '/pipeline', icon: CalendarCheck, description: 'Qualification, bookings and callbacks' },
+  { title: 'Winnr', href: '/winnr', icon: Globe, description: 'Email infrastructure' },
   {
     title: 'Dashboard',
     href: '/dashboard',
@@ -57,36 +69,10 @@ const navigationItems = [
     description: 'Manage prospects',
   },
   {
-    title: 'Email Accounts',
-    href: '/accounts',
-    icon: Mail,
-    description: 'Connected accounts',
-  },
-  {
-    title: 'Domains',
-    href: '/domains',
-    icon: Globe,
-    description: 'Domain settings',
-  },
-  {
-    title: 'Warmup',
-    href: '/warmup',
-    icon: Flame,
-    description: 'Email warmup',
-    badge: 'Active',
-    badgeColor: 'bg-emerald-500/20 text-emerald-400',
-  },
-  {
     title: 'Inbox',
     href: '/inbox',
     icon: Inbox,
     description: 'Unified inbox',
-  },
-  {
-    title: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-    description: 'Performance metrics',
   },
 ]
 
@@ -97,12 +83,6 @@ const bottomItems = [
     icon: Settings,
     description: 'App settings',
   },
-  {
-    title: 'Help & Support',
-    href: '/help',
-    icon: HelpCircle,
-    description: 'Get help',
-  },
 ]
 
 function NavItem({
@@ -110,7 +90,7 @@ function NavItem({
   isActive,
   isCollapsed
 }: {
-  item: typeof navigationItems[0]
+  item: NavigationItem
   isActive: boolean
   isCollapsed: boolean
 }) {
@@ -248,7 +228,7 @@ export function AppSidebar() {
                   <NavItem
                     key={item.href}
                     item={item}
-                    isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
+                    isActive={pathname === item.href || (item.href !== '/operations' && pathname.startsWith(item.href + '/'))}
                     isCollapsed={isCollapsed}
                   />
                 ))}
@@ -284,57 +264,11 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Footer with upgrade CTA */}
         <SidebarFooter className="mt-auto border-t border-border/50 p-4">
-          {!isCollapsed ? (
-            <div className="space-y-3">
-              {/* Upgrade card */}
-              <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
-                {/* Decorative elements */}
-                <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-primary/10 blur-xl" />
-                <div className="absolute -bottom-4 -left-4 h-12 w-12 rounded-full bg-primary/5 blur-lg" />
-
-                <div className="relative">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold">Upgrade to Pro</span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Unlock unlimited campaigns and advanced analytics
-                  </p>
-                  <Button
-                    size="sm"
-                    className="mt-3 w-full btn-gradient text-xs"
-                  >
-                    Upgrade Now
-                  </Button>
-                </div>
-              </div>
-
-              {/* Version info */}
-              <div className="flex items-center justify-between px-1 text-[10px] text-muted-foreground/50">
-                <span>InstantScale v1.0</span>
-                <div className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span>All systems operational</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  Upgrade to Pro
-                </TooltipContent>
-              </Tooltip>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </div>
-          )}
+          <Link href="/operations" aria-label="Review outreach readiness" className="flex items-center justify-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">
+            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            {!isCollapsed && <span>Review outreach readiness</span>}
+          </Link>
         </SidebarFooter>
       </div>
 

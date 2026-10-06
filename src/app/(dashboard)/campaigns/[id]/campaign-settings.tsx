@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,15 +23,19 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { MANDATORY_DELIVERABILITY_SETTINGS } from '@/lib/campaigns/core'
 
 interface CampaignSettingsProps {
   campaignId: string
   settings: Record<string, unknown>
-  onUpdate: (settings: Record<string, unknown>) => void
+  expectedUpdatedAt: string
+  mailboxIds: string[]
+  onUpdate: (settings: Record<string, unknown>, updatedAt: string, mailboxIds: string[]) => void
 }
 
 interface Settings {
   dailyLimit: number
+  sendingDays: number[]
   sendingWindowStart: number
   sendingWindowEnd: number
   timezone: string
@@ -60,12 +64,13 @@ const TIMEZONES = [
 
 const DEFAULT_SETTINGS: Settings = {
   dailyLimit: 50,
+  sendingDays: [1, 2, 3, 4, 5],
   sendingWindowStart: 9,
   sendingWindowEnd: 17,
   timezone: 'America/New_York',
   skipWeekends: true,
-  trackOpens: true,
-  trackClicks: true,
+  trackOpens: false,
+  trackClicks: false,
   unsubscribeLink: true,
   stopOnReply: true,
   stopOnBounce: true,
@@ -74,11 +79,39 @@ const DEFAULT_SETTINGS: Settings = {
   abTestDuration: 24,
 }
 
-export function CampaignSettings({ campaignId, settings: initialSettings, onUpdate }: CampaignSettingsProps) {
+export function CampaignSettings({ campaignId, settings: initialSettings, expectedUpdatedAt, mailboxIds: initialMailboxIds, onUpdate }: CampaignSettingsProps) {
   const [settings, setSettings] = useState<Settings>({
     ...DEFAULT_SETTINGS,
     ...(initialSettings as Partial<Settings>),
+    // Historical rows may store disabled safety switches; repair them so saving
+    // an unrelated setting keeps the required policy true.
+    ...MANDATORY_DELIVERABILITY_SETTINGS,
   })
+  const [mailboxIds, setMailboxIds] = useState(initialMailboxIds)
+  const [mailboxes, setMailboxes] = useState<{ id: string; email: string }[]>([])
+  const [mailboxCursor, setMailboxCursor] = useState<string | null>(null)
+  const [mailboxError, setMailboxError] = useState<string | null>(null)
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/winnr/mailboxes?limit=100').then(async response => {
+      const data = await response.json()
+      if (mounted) {
+        if (response.ok) { setMailboxes(data.items ?? []); setMailboxCursor(data.nextCursor ?? null) }
+        else setMailboxError(data.error?.message ?? 'Mailboxes unavailable')
+      }
+    }).catch(() => { if (mounted) setMailboxError('Mailboxes unavailable') })
+    return () => { mounted = false }
+  }, [])
+  async function loadMoreMailboxes() {
+    if (!mailboxCursor) return
+    try {
+      const response = await fetch(`/api/winnr/mailboxes?limit=100&cursor=${encodeURIComponent(mailboxCursor)}`)
+      const data = await response.json()
+      if (!response.ok) { setMailboxError(data.error?.message ?? 'Mailboxes unavailable'); return }
+      setMailboxes(previous => [...previous, ...(data.items ?? [])])
+      setMailboxCursor(data.nextCursor ?? null)
+    } catch { setMailboxError('Mailboxes unavailable') }
+  }
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
 
@@ -93,11 +126,16 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
       const response = await fetch(`/api/campaigns/${campaignId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings }),
+        body: JSON.stringify({
+          settings: { ...settings, ...MANDATORY_DELIVERABILITY_SETTINGS },
+          mailboxIds,
+          expectedUpdatedAt,
+        }),
       })
 
       if (response.ok) {
-        onUpdate(settings as unknown as Record<string, unknown>)
+        const data = await response.json()
+        onUpdate(data.campaign.settings, data.campaign.updatedAt, data.campaign.mailboxIds)
         setHasChanges(false)
         toast.success('Settings saved successfully')
       } else {
@@ -128,6 +166,26 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
         </Button>
       </div>
 
+      <Card>
+        <CardHeader><CardTitle>Winnr senders</CardTitle><CardDescription>Choose mailboxes from your connected account. Delivery remains blocked until the execution service is ready.</CardDescription></CardHeader>
+        <CardContent className="space-y-2">
+          {mailboxError && <p role="status">{mailboxError}</p>}
+          {mailboxes.map(mailbox => <label key={mailbox.id} className="flex items-center gap-2">
+            <input type="checkbox" checked={mailboxIds.includes(mailbox.id)} onChange={event => {
+              setMailboxIds(previous => event.target.checked ? [...previous, mailbox.id] : previous.filter(id => id !== mailbox.id))
+              setHasChanges(true)
+            }} />{mailbox.email}
+          </label>)}
+          {mailboxCursor && <Button variant="outline" onClick={loadMoreMailboxes}>Load more mailboxes</Button>}
+          {!mailboxError && mailboxes.length === 0 && <p>No Winnr mailboxes are available.</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>Sending days</CardTitle></CardHeader>
+        <CardContent className="flex gap-3 flex-wrap">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => <label key={day} className="flex gap-1 items-center">
+          <input type="checkbox" checked={settings.sendingDays.includes(index)} onChange={event => updateSetting('sendingDays', event.target.checked ? [...settings.sendingDays, index] : settings.sendingDays.filter(value => value !== index))} />{day}
+        </label>)}</CardContent>
+      </Card>
       {/* Sending Schedule */}
       <Card>
         <CardHeader>
@@ -230,6 +288,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
         </CardContent>
       </Card>
 
+      <p role="status">SMTP campaign sending is available after Winnr credential import, verified leads and sender identity setup in Launch. Open and click tracking and A/B variants remain unavailable.</p>
       {/* Tracking */}
       <Card>
         <CardHeader>
@@ -251,6 +310,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.trackOpens}
+              disabled
               onCheckedChange={(checked) => updateSetting('trackOpens', checked)}
             />
           </div>
@@ -266,6 +326,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.trackClicks}
+              disabled
               onCheckedChange={(checked) => updateSetting('trackClicks', checked)}
             />
           </div>
@@ -281,6 +342,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.unsubscribeLink}
+              disabled
               onCheckedChange={(checked) => updateSetting('unsubscribeLink', checked)}
             />
           </div>
@@ -308,6 +370,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.stopOnReply}
+              disabled
               onCheckedChange={(checked) => updateSetting('stopOnReply', checked)}
             />
           </div>
@@ -323,6 +386,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.stopOnBounce}
+              disabled
               onCheckedChange={(checked) => updateSetting('stopOnBounce', checked)}
             />
           </div>
@@ -350,6 +414,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
             </div>
             <Switch
               checked={settings.abTestEnabled}
+              disabled
               onCheckedChange={(checked) => updateSetting('abTestEnabled', checked)}
             />
           </div>
@@ -401,9 +466,7 @@ export function CampaignSettings({ campaignId, settings: initialSettings, onUpda
                       How A/B Testing Works
                     </p>
                     <p className="text-blue-700 dark:text-blue-300 mt-1">
-                      When you add multiple variants to a step, we&apos;ll split your leads evenly and
-                      send each variant to a portion. After the test duration, the winning variant
-                      (based on your criteria) will be sent to remaining leads.
+                      Multiple variants and automated winner selection are not supported by the current sequence storage. Save one variant per step.
                     </p>
                   </div>
                 </div>

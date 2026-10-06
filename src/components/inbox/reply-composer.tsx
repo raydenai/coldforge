@@ -66,6 +66,7 @@ export function ReplyComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [message, setMessage] = useState(defaultMessage)
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   // Auto-focus on mount
   useEffect(() => {
@@ -90,10 +91,12 @@ export function ReplyComposer({
 
     try {
       setIsSending(true)
+      setSendError(null)
       await onSend(message)
       setMessage('')
     } catch (error) {
       console.error('Failed to send reply:', error)
+      setSendError(error instanceof Error && error.message ? error.message : 'Failed to send reply')
     } finally {
       setIsSending(false)
     }
@@ -243,6 +246,12 @@ export function ReplyComposer({
           }}
         />
       </div>
+
+      {sendError && (
+        <p role="alert" className="px-3 pb-2 text-xs text-destructive">
+          {sendError}
+        </p>
+      )}
 
       {/* Toolbar & Actions */}
       <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">

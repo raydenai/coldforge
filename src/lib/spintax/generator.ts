@@ -43,18 +43,21 @@ export function generateVariation(tokens: SpintaxToken[], index: number): string
       const optionCounts = token.options.map(opt => countVariations(opt));
       const totalOptions = optionCounts.reduce((a, b) => a + b, 0);
 
-      let optionIndex = currentIndex % totalOptions;
+      const optionIndex = currentIndex % totalOptions;
       currentIndex = Math.floor(currentIndex / totalOptions);
 
       // Find which option this index falls into
       let accumulated = 0;
       for (let i = 0; i < token.options.length; i++) {
-        if (optionIndex < accumulated + optionCounts[i]) {
+        const count = optionCounts[i]
+        const option = token.options[i]
+        if (count === undefined || option === undefined) continue
+        if (optionIndex < accumulated + count) {
           const subIndex = optionIndex - accumulated;
-          result += generateVariation(token.options[i], subIndex);
+          result += generateVariation(option, subIndex);
           break;
         }
-        accumulated += optionCounts[i];
+        accumulated += count;
       }
     }
   }

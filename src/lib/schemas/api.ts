@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { Json } from '@/types/database'
+const jsonValueSchema: z.ZodType<Json> = z.lazy(() => z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(jsonValueSchema), z.record(z.string(), jsonValueSchema)]))
 
 // ============================================================================
 // Common Schemas
@@ -153,7 +155,7 @@ export const createLeadSchema = z.object({
   phone: z.string().max(50).optional(),
   linkedinUrl: z.string().url().max(500).optional().or(z.literal('')),
   listId: uuidSchema.optional(),
-  customFields: z.record(z.string(), z.unknown()).optional(),
+  customFields: z.record(z.string(), jsonValueSchema).optional(),
 })
 
 /** Update lead request schema */
@@ -165,7 +167,7 @@ export const updateLeadSchema = z.object({
   phone: z.string().max(50).optional(),
   linkedinUrl: z.string().url().max(500).optional().or(z.literal('')),
   listId: uuidSchema.nullable().optional(),
-  customFields: z.record(z.string(), z.unknown()).optional(),
+  customFields: z.record(z.string(), jsonValueSchema).optional(),
   status: leadStatusSchema.optional(),
 })
 
@@ -179,7 +181,7 @@ export const leadResponseSchema = z.object({
   title: z.string().nullable(),
   phone: z.string().nullable(),
   linkedinUrl: z.string().nullable(),
-  customFields: z.record(z.string(), z.unknown()),
+  customFields: z.record(z.string(), jsonValueSchema),
   listId: uuidSchema.nullable(),
   status: leadStatusSchema,
   validationStatus: leadValidationStatusSchema,

@@ -1,3 +1,6 @@
+import { updateLeadSchema } from '@/lib/schemas'
+import type { UpdateTables } from '@/types/database'
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -71,6 +74,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -80,7 +84,9 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const body = await request.json()
+    const validation = updateLeadSchema.safeParse(await request.json())
+    if (!validation.success) return NextResponse.json({ error: 'Invalid lead update' }, { status: 400 })
+    const body = validation.data
 
     // Get user's organization
     const { data: userData } = await supabase
@@ -105,8 +111,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     }
 
+    if (body.listId) {
+      const { data: list } = await supabase.from('lead_lists').select('id').eq('id', body.listId).eq('organization_id', userData.organization_id).single()
+      if (!list) return NextResponse.json({ error: 'List not found' }, { status: 404 })
+    }
     // Build update object
-    const updates: Record<string, unknown> = {
+    const updates: UpdateTables<'leads'> = {
       updated_at: new Date().toISOString(),
     }
 
@@ -124,6 +134,7 @@ export async function PATCH(
       .from('leads')
       .update(updates)
       .eq('id', id)
+      .eq('organization_id', userData.organization_id)
       .select()
       .single()
 
@@ -161,9 +172,10 @@ export async function PATCH(
 
 // DELETE /api/leads/[id] - Delete lead
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

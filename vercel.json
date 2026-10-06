@@ -2,8 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "regions": ["iad1"],
+  "installCommand": "npm ci",
+  "regions": [
+    "iad1"
+  ],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
@@ -11,31 +13,12 @@
   },
   "crons": [
     {
-      "path": "/api/cron/warmup",
-      "schedule": "0 */2 * * *"
-    },
-    {
-      "path": "/api/cron/inbox-sync",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/campaign-scheduler",
+      "path": "/api/cron/outreach",
       "schedule": "* * * * *"
     },
     {
-      "path": "/api/cron/health-check",
-      "schedule": "*/15 * * * *"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,DELETE,PATCH,POST,PUT,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
-      ]
+      "path": "/api/cron/downstream",
+      "schedule": "* * * * *"
     }
   ]
 }

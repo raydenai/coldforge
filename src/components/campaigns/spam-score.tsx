@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   AlertTriangle,
   CheckCircle,
@@ -119,7 +118,6 @@ export function SpamScore({ subject, content, showDetails = true }: SpamScorePro
 
   const criticalIssues = result?.issues.filter(i => i.type === 'critical') || [];
   const warningIssues = result?.issues.filter(i => i.type === 'warning') || [];
-  const cautionIssues = result?.issues.filter(i => i.type === 'caution' || i.type === 'pattern') || [];
 
   return (
     <Card className="border-l-4" style={{
@@ -283,16 +281,13 @@ export function SpamScore({ subject, content, showDetails = true }: SpamScorePro
 
 // Compact inline version
 export function SpamScoreInline({ subject, content }: { subject: string; content: string }) {
-  const [score, setScore] = useState<number | null>(null);
-  const [grade, setGrade] = useState<string | null>(null);
+  const [result, setResult] = useState<{ score: number; grade: string } | null>(null);
   const debouncedContent = useDebounce(content, 500);
 
   useEffect(() => {
-    if (!debouncedContent) {
-      setScore(null);
-      setGrade(null);
-      return;
-    }
+    if (!debouncedContent) return;
+
+    let cancelled = false;
 
     const analyze = async () => {
       try {
@@ -308,8 +303,8 @@ export function SpamScoreInline({ subject, content }: { subject: string; content
 
         if (response.ok) {
           const data = await response.json();
-          setScore(data.score);
-          setGrade(data.grade);
+          // Ignore a response that lost the race to a newer request.
+          if (!cancelled) setResult({ score: data.score, grade: data.grade });
         }
       } catch (error) {
         console.error('Spam check failed:', error);
@@ -317,9 +312,17 @@ export function SpamScoreInline({ subject, content }: { subject: string; content
     };
 
     analyze();
+
+    return () => {
+      cancelled = true;
+    };
   }, [subject, debouncedContent]);
 
-  if (score === null) return null;
+  // Derived during render rather than written back in the effect: empty content
+  // simply has no score, and the last score never flashes against new content.
+  const current = debouncedContent ? result : null;
+
+  if (current === null) return null;
 
   const getColor = (s: number) => {
     if (s >= 80) return 'bg-green-500';
@@ -328,8 +331,8 @@ export function SpamScoreInline({ subject, content }: { subject: string; content
   };
 
   return (
-    <Badge className={`${getColor(score)} text-white`}>
-      {grade} ({score}/100)
+    <Badge className={`${getColor(current.score)} text-white`}>
+      {current.grade} ({current.score}/100)
     </Badge>
   );
 }

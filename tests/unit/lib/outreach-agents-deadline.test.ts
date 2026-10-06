@@ -1,0 +1,5 @@
+import {it,expect,vi} from 'vitest'
+const mocks=vi.hoisted(()=>({decision:vi.fn(),reply:vi.fn()}))
+vi.mock('@/lib/outreach/agents/worker',()=>({processNextAgentDecision:mocks.decision,executeNextApprovedAgentReply:mocks.reply}))
+import {createDecisionPhasePort,createReplyPhasePort} from '@/lib/outreach/operations/runtime'
+it('031 forwards the existing phase deadline to both030 worker ports without resetting it',async()=>{const actor={userId:'11111111-1111-4111-8111-111111111111',organizationId:'11111111-1111-4111-8111-111111111111',role:'owner' as const},deadline=Date.now()+20000;mocks.decision.mockResolvedValue({status:'idle',phase:'decision',modelCalls:0,smtpAttempts:0});mocks.reply.mockResolvedValue({status:'idle',phase:'reply',modelCalls:0,smtpAttempts:0});await createDecisionPhasePort()(actor,deadline);await createReplyPhasePort()(actor,deadline);expect(mocks.decision).toHaveBeenCalledWith(actor,undefined,deadline);expect(mocks.reply).toHaveBeenCalledWith(actor,undefined,deadline)})

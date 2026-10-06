@@ -1,0 +1,31 @@
+import '@testing-library/jest-dom/vitest'
+import { describe,it,expect,vi,beforeEach,afterEach } from 'vitest'
+import { render,screen,cleanup,act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+const nav=vi.hoisted(()=>({push:vi.fn(),params:new URLSearchParams()}))
+vi.mock('next/navigation',()=>({useRouter:()=>nav,useSearchParams:()=>nav.params}))
+import { UnifiedInbox } from '@/components/inbox/unified-inbox'
+const first='11111111-1111-4111-8111-111111111111',second='22222222-2222-4222-8222-222222222222',source='33333333-3333-4333-8333-333333333333'
+const thread=(id=first)=>({id,organizationId:'org',campaignId:'campaign',leadId:'lead',mailboxId:'mailbox',subject:id===first?'First conversation':'Second conversation',participantEmail:'lead@example.test',participantName:'Lead',messageCount:1,lastMessageAt:'2026-10-05T00:00:00Z',status:'active',category:'interested',sentiment:'neutral',assignedTo:null,createdAt:'2026-10-05T00:00:00Z',updatedAt:'2026-10-05T00:00:00Z',preview:'Saved body',hasUnread:false,lead:null,campaign:null})
+const detail=(id=first)=>({thread:thread(id),lead:null,campaign:null,mailbox:null,replyReadiness:{ready:true,sourceReplyId:source,controlRevision:2,control:{mode:'human',revision:2}},timeline:[{id:'incoming-'+id,type:'reply',direction:'inbound',messageId:'<incoming@example.test>',from:'lead@example.test',fromName:null,to:'sender@example.test',subject:'Question',bodyText:id===first?'First observed body':'Second observed body',bodyHtml:null,timestamp:'2026-10-05T00:00:00Z',category:'interested',sentiment:'neutral',status:'received',isAutoDetected:false}],navigation:{prev:null,next:null,currentIndex:1,total:2}})
+const list={threads:[thread(),thread(second)],stats:{total:2,unread:0,interested:2,notInterested:0,outOfOffice:0,meetingRequest:0,unsubscribe:0,question:0},pagination:{total:2,hasMore:false}}
+beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('IntersectionObserver',class{observe(){}unobserve(){}disconnect(){}});vi.stubGlobal('ResizeObserver',class{observe(){}unobserve(){}disconnect(){}})});afterEach(()=>{cleanup();vi.unstubAllGlobals()})
+describe('inbox reply transport',()=>{
+ it('posts pinned inbound/control context and retains a disabled draft on unknown outcome',async()=>{
+ const fetcher=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{const url=String(input);if(init?.method==='POST')return Response.json({accepted:false,attemptId:'held-attempt',receipt:{outcome:'unknown',code:'smtp_outcome_unknown'},settlement:{settled:true,status:'unknown'}});return Response.json(url.startsWith('/api/inbox?')?list:detail())});vi.stubGlobal('fetch',fetcher)
+ render(<UnifiedInbox/>);const user=userEvent.setup();await user.click(await screen.findByText('First conversation'));await screen.findByText('First observed body');await user.click(screen.getByRole('button',{name:/write a reply/i}));const textbox=screen.getByPlaceholderText('Write your reply...');await user.type(textbox,'Pending human reply');await user.click(screen.getByRole('button',{name:/^send$/i}));await screen.findAllByText(/held-attempt/)
+ expect(textbox).toHaveValue('Pending human reply');expect(screen.getByRole('button',{name:/^send$/i})).toBeDisabled();const post=fetcher.mock.calls.find(([,init])=>init?.method==='POST');expect(post?.[0]).toBe(`/api/inbox/${first}/reply`);expect(JSON.parse(String(post?.[1]?.body))).toEqual({message:'Pending human reply',sourceReplyId:source,controlRevision:2});expect(fetcher.mock.calls.filter(([,init])=>init?.method==='POST')).toHaveLength(1)
+ })
+ it.each(['network','parse'])('holds the draft after an uncertain %s response',async(failure)=>{
+ vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{if(init?.method==='POST'){if(failure==='network')throw Error('Connection lost');return new Response('{',{status:200,headers:{'Content-Type':'application/json'}})}return Response.json(String(input).startsWith('/api/inbox?')?list:detail())}))
+ render(<UnifiedInbox/>);const user=userEvent.setup();await user.click(await screen.findByText('First conversation'));await screen.findByText('First observed body');await user.click(screen.getByRole('button',{name:/write a reply/i}));const textbox=screen.getByPlaceholderText('Write your reply...');await user.type(textbox,'Keep uncertain draft');await user.click(screen.getByRole('button',{name:/^send$/i}));await screen.findAllByText(/response uncertain/i);expect(textbox).toHaveValue('Keep uncertain draft');expect(screen.getByRole('button',{name:/^send$/i})).toBeDisabled()
+ })
+ it('keeps definitely rejected pre-effect input editable',async()=>{
+ vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>init?.method==='POST'?Response.json({error:{message:'Invalid input'}},{status:400}):Response.json(String(input).startsWith('/api/inbox?')?list:detail())))
+ render(<UnifiedInbox/>);const user=userEvent.setup();await user.click(await screen.findByText('First conversation'));await screen.findByText('First observed body');await user.click(screen.getByRole('button',{name:/write a reply/i}));const textbox=screen.getByPlaceholderText('Write your reply...');await user.type(textbox,'Correctable draft');await user.click(screen.getByRole('button',{name:/^send$/i}));await screen.findByText('Invalid input');expect(textbox).toHaveValue('Correctable draft');expect(screen.getByRole('button',{name:/^send$/i})).toBeEnabled()
+ })
+ it('a late prior thread response cannot overwrite the selected conversation',async()=>{
+ let release:(response:Response)=>void=()=>{};const delayed=new Promise<Response>(resolve=>{release=resolve});vi.stubGlobal('fetch',vi.fn(async(input:RequestInfo|URL)=>{const url=String(input);if(url===`/api/inbox/${first}`)return delayed;if(url===`/api/inbox/${second}`)return Response.json(detail(second));return Response.json(list)}))
+ render(<UnifiedInbox/>);const user=userEvent.setup();await user.click(await screen.findByText('First conversation'));await user.click(screen.getByText('Second conversation'));await screen.findByText('Second observed body');await act(async()=>{release(Response.json(detail()));await delayed});expect(screen.getByText('Second observed body')).toBeInTheDocument();expect(screen.queryByText('First observed body')).not.toBeInTheDocument()
+ })
+})

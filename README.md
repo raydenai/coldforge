@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ColdForge
 
-## Getting Started
+Email-first outreach over Winnr: mailbox readiness and warm-up controls, lead
+import and validation, campaign sequences, a shared reply inbox, approved AI
+copy and conversation decisions, qualification, booking and requested callbacks.
+The Operations screen exposes setup gaps, held actions and the outbound stop.
+Social and LinkedIn adapters are future modules.
 
-First, run the development server:
+## Local development
 
-```bash
+Use Node24 and PostgreSQL17 for the database integration tests.
+
+```sh
+npm ci
+cp .env.production.template .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set real development configuration in the ignored `.env.local` before starting.
+The application runs at http://localhost:4000. Never commit credentials or point
+disposable integration fixtures at a live database.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+[Environment setup](docs/ENVIRONMENT.md) describes required variables and encrypted
+organization-specific providers. [Authentication setup](docs/AUTH-STARTUP.md)
+covers signup confirmation and redirect URLs.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Verification and release
 
-## Learn More
+```sh
+npm run lint
+npm run typegen
+npm run typecheck
+npm run test:unit
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+The [migration runbook](docs/OUTREACH-MIGRATION-RUNBOOK.md) specifies all16 guarded
+local PostgreSQL targets and the required integration runner. The live historical
+schema requires additive migrations020–033; do not replay incompatible001–019.
+Release through a feature-branch pull request with CI and a verified backup.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Operating the system
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Connect Winnr and configure actual sender domains, mailboxes and ingestion.
+2. Import leads, verify current email addresses, and assign ready senders to a campaign.
+3. Approve campaign copy and scheduling; monitor replies, suppression and receipts.
+4. Configure a model and approved knowledge before enabling conversation automation.
+5. Configure GHL, CloseBot or Retell in Pipeline when those accounts are available.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+SMTP acceptance is distinct from delivery. Unknown provider outcomes remain held
+for verified reconciliation. Inbound replies stop cold follow-ups; human takeover
+stops agent replies. Voice callbacks require a separate eligibility record.
+See [downstream contracts](docs/OUTREACH-DOWNSTREAM-CONTRACTS.md),
+[implementation plan](docs/superpowers/plans/2026-10-05-complete-outreach.md) and
+[release state](docs/QUEEN-STATE.yaml) for scope and measured evidence.

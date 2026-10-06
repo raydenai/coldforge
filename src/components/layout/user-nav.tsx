@@ -18,10 +18,8 @@ import {
   LogOut,
   Settings,
   User as UserIcon,
-  CreditCard,
   HelpCircle,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react'
 
 interface UserNavProps {
@@ -104,30 +102,10 @@ export function UserNav({ user }: UserNavProps) {
 
         <DropdownMenuSeparator />
 
-        {/* Quick stats */}
-        <div className="p-2">
-          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium">Free Plan</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => router.push('/settings/billing')}
-            >
-              Upgrade
-            </Button>
-          </div>
-        </div>
-
-        <DropdownMenuSeparator />
-
         {/* Menu items */}
         <DropdownMenuGroup>
           <DropdownMenuItem
-            onClick={() => router.push('/settings/profile')}
+            onClick={() => router.push('/settings')}
             className="cursor-pointer gap-2 py-2.5"
           >
             <UserIcon className="h-4 w-4 text-muted-foreground" />
@@ -140,13 +118,7 @@ export function UserNav({ user }: UserNavProps) {
             <Settings className="h-4 w-4 text-muted-foreground" />
             <span>Settings</span>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push('/settings/billing')}
-            className="cursor-pointer gap-2 py-2.5"
-          >
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-            <span>Billing</span>
-          </DropdownMenuItem>
+
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

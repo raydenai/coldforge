@@ -35,12 +35,12 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 

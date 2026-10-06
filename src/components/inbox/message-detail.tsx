@@ -42,6 +42,7 @@ import {
 } from 'lucide-react'
 import { CategoryBadgeDropdown, categoryConfig } from './category-badge'
 import { ReplyComposer, QuickReplyComposer } from './reply-composer'
+import { MessageBody } from './message-body'
 import type { ReplyCategory, ReplySentiment } from '@/lib/replies'
 
 // Thread message interface
@@ -124,6 +125,10 @@ interface MessageDetailProps {
   isLoading?: boolean
   showLeadInfo?: boolean
   onToggleLeadInfo?: () => void
+  /** Reply sending is gated until the durable transport is integrated. */
+  replyTransportAvailable?: boolean
+  onTakeover?: () => Promise<void>
+  replyDisabledReason?: string
   className?: string
 }
 
@@ -147,9 +152,15 @@ export function MessageDetail({
   isLoading = false,
   showLeadInfo = true,
   onToggleLeadInfo,
+  replyTransportAvailable = true,
+  replyDisabledReason,
+  onTakeover,
   className,
 }: MessageDetailProps) {
   const [showReplyComposer, setShowReplyComposer] = useState(false)
+  const replyDisabled = !replyTransportAvailable
+  const readableReason:Record<string,string>={human_takeover_required:'Take over this conversation before sending a human reply.',inbound_body_required:'Fetch the latest incoming message body before replying.',canonical_lead_required:'Link this conversation to its current contact before replying.',approved_sender_identity_required:'Configure an approved sender identity for this conversation.',current_mailbox_ingestion_required:'Connect this mailbox and its verified inbox receiver in Winnr setup.',suppressed_or_archived:'This recipient is suppressed or this conversation is archived.',response_already_reserved:'A reply is already reserved or accepted for this incoming message. Reconcile any unknown outcome before continuing.',owner_or_admin_required:'Only an owner or admin can send replies.'}
+  const displayReplyReason=replyDisabledReason?(readableReason[replyDisabledReason]??replyDisabledReason):undefined
 
   // Format date
   const formatDate = useCallback((dateString: string) => {
@@ -379,13 +390,23 @@ export function MessageDetail({
           </ScrollArea>
 
           {/* Reply Composer */}
-          <div className="border-t p-4 shrink-0">
+          <div className="border-t p-4 shrink-0 space-y-2">
+            {replyDisabled && onTakeover && replyDisabledReason === 'human_takeover_required' && <Button type="button" onClick={()=>void onTakeover()}>Take over conversation</Button>}
+            {replyDisabled && <a href="/winnr" className="text-xs underline">Mailbox and inbox setup</a>}
+            {replyDisabled && replyDisabledReason && (
+              <p role="status" className="text-xs text-muted-foreground">
+                {displayReplyReason}
+              </p>
+            )}
             {showReplyComposer ? (
               <ReplyComposer
                 recipientEmail={thread.participantEmail}
                 recipientName={thread.participantName}
                 onSend={handleSendReply}
+                showToolbar={false}
                 onCancel={() => setShowReplyComposer(false)}
+                disabled={replyDisabled}
+                placeholder={replyDisabled ? displayReplyReason ?? 'Reply sending is unavailable' : 'Write your reply...'}
                 autoFocus
               />
             ) : (
@@ -477,14 +498,7 @@ function MessageBubble({
 
       {/* Body */}
       <div className="mt-4 text-sm leading-relaxed">
-        {message.bodyHtml ? (
-          <div
-            dangerouslySetInnerHTML={{ __html: message.bodyHtml }}
-            className="prose prose-sm dark:prose-invert max-w-none"
-          />
-        ) : (
-          <div className="whitespace-pre-wrap">{message.bodyText}</div>
-        )}
+        <MessageBody bodyText={message.bodyText} bodyHtml={message.bodyHtml} />
       </div>
     </div>
   )

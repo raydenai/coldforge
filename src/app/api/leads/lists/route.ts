@@ -1,3 +1,5 @@
+import { z } from 'zod'
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -25,7 +27,7 @@ export async function GET() {
 
     // Get all lists
     const { data: lists, error } = await supabase.from('lead_lists')
-      .select('*')
+      .select('*, leads(count)')
       .eq('organization_id', userData.organization_id)
       .order('created_at', { ascending: false })
 
@@ -35,11 +37,11 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      lists: lists?.map((list: { id: string; name: string; description: string | null; lead_count: number; created_at: string; updated_at: string }) => ({
+      lists: lists?.map(list => ({
         id: list.id,
         name: list.name,
         description: list.description,
-        leadCount: list.lead_count,
+        leadCount: list.leads[0]?.count ?? 0,
         createdAt: list.created_at,
         updatedAt: list.updated_at,
       })) || [],
@@ -55,6 +57,7 @@ export async function GET() {
 
 // POST /api/leads/lists - Create a new list
 export async function POST(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -64,11 +67,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description } = body
+    const validation = z.object({ name: z.string().trim().min(1).max(100), description: z.string().max(1000).optional() }).strict().safeParse(body)
 
-    if (!name) {
+    if (!validation.success) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
+
+    const { name, description } = validation.data
 
     // Get user's organization
     const { data: userData } = await supabase

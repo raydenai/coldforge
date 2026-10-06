@@ -1,3 +1,4 @@
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { Json } from '@/types/database'
@@ -65,6 +66,7 @@ export async function GET() {
 
 // PATCH /api/settings/notifications - Update notification settings
 export async function PATCH(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
 
@@ -108,7 +110,7 @@ export async function PATCH(request: NextRequest) {
 
     const { error } = await supabase
       .from('users')
-      // @ts-expect-error - Supabase type inference issue with Json column updates
+
       .update({
         settings: updatedSettings,
         updated_at: new Date().toISOString()

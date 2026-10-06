@@ -1,3 +1,4 @@
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { type ReplyCategory } from '@/lib/replies'
@@ -20,12 +21,12 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
@@ -91,6 +92,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/inbox - Bulk actions on threads
 export async function POST(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -101,12 +103,12 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 

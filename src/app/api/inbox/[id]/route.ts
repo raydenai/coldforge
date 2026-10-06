@@ -1,38 +1,8 @@
+import { createReplyRepository } from '@/lib/outreach/replies-database'
+import { readReplyReadiness } from '@/lib/outreach/replies'
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { type ReplyCategory, type ReplySentiment, type ReplyStatus } from '@/lib/replies'
-
-interface ThreadMessage {
-  id: string
-  thread_id: string
-  direction: 'inbound' | 'outbound'
-  message_id: string
-  from_email: string
-  from_name: string | null
-  to_email: string
-  subject: string
-  body_text: string
-  body_html: string | null
-  sent_at: string
-  created_at: string
-}
-
-interface Reply {
-  id: string
-  thread_id: string
-  message_id: string
-  from_email: string
-  from_name: string | null
-  to_email: string
-  subject: string
-  body_text: string
-  body_html: string | null
-  category: ReplyCategory
-  sentiment: ReplySentiment
-  status: ReplyStatus
-  is_auto_detected: boolean
-  received_at: string
-}
 
 // GET /api/inbox/[id] - Get full thread with all messages
 export async function GET(
@@ -50,84 +20,35 @@ export async function GET(
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
+      .from('users')
+      .select('organization_id,role')
       .eq('id', user.id)
-      .single() as { data: { organization_id: string } | null }
+      .single()
 
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    // Get thread with all related data
-    const { data: thread, error: threadError } = await supabase
-      .from('threads')
-      .select(`
-        *,
-        leads:lead_id (id, email, first_name, last_name, company, title, phone, linkedin_url, status, custom_fields),
-        campaigns:campaign_id (id, name, status),
-        mailboxes:mailbox_id (id, email, first_name, last_name)
-      `)
-      .eq('id', id)
-      .eq('organization_id', profile.organization_id)
-      .single() as {
-        data: {
-          id: string
-          organization_id: string
-          campaign_id: string | null
-          lead_id: string | null
-          mailbox_id: string
-          subject: string
-          participant_email: string
-          participant_name: string | null
-          message_count: number
-          last_message_at: string
-          status: 'active' | 'resolved' | 'archived'
-          category: ReplyCategory
-          sentiment: ReplySentiment
-          assigned_to: string | null
-          created_at: string
-          updated_at: string
-          leads: {
-            id: string
-            email: string
-            first_name: string | null
-            last_name: string | null
-            company: string | null
-            title: string | null
-            phone: string | null
-            linkedin_url: string | null
-            status: string
-            custom_fields: Record<string, unknown>
-          } | null
-          campaigns: { id: string; name: string; status: string } | null
-          mailboxes: { id: string; email: string; first_name: string | null; last_name: string | null } | null
-        } | null
-        error: Error | null
-      }
-
+    if (!profile?.organization_id) return NextResponse.json({ error: 'Organization membership required' }, { status: 403 })
+    const { data: thread, error: threadError } = await supabase.from('threads')
+      .select('*, leads:lead_id(id,email,first_name,last_name,company,title,phone,linkedin_url,status,custom_fields), campaigns:campaign_id(id,name,status)')
+      .eq('id', id).eq('organization_id', profile.organization_id).single()
     if (threadError || !thread) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
 
     // Get thread messages
-    const { data: messages } = await supabase
+    const { data: messages, error: messagesError } = await supabase
       .from('thread_messages')
       .select('*')
       .eq('thread_id', id)
-      .order('sent_at', { ascending: true }) as {
-        data: ThreadMessage[] | null
-      }
+      .order('sent_at', { ascending: true })
+    if (messagesError) throw messagesError
 
     // Get replies for this thread
-    const { data: replies } = await supabase
+    const { data: replies, error: repliesError } = await supabase
       .from('replies')
       .select('*')
       .eq('thread_id', id)
       .eq('organization_id', profile.organization_id)
-      .order('received_at', { ascending: true }) as {
-        data: Reply[] | null
-      }
+      .order('received_at', { ascending: true })
+    if (repliesError) throw repliesError
 
     // Mark unread replies as read
     const unreadReplyIds = replies?.filter(r => r.status === 'unread').map(r => r.id) || []
@@ -173,7 +94,7 @@ export async function GET(
         status: r.status === 'unread' ? 'read' : r.status, // Updated status
         isAutoDetected: r.is_auto_detected,
       })) || []),
-    ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    ].sort((a, b) => new Date(a.timestamp ?? 0).getTime() - new Date(b.timestamp ?? 0).getTime())
 
     // Get previous/next thread for navigation
     const { data: adjacentThreads } = await supabase
@@ -189,7 +110,9 @@ export async function GET(
     const prevThread = currentIndex > 0 ? adjacentThreads?.[currentIndex - 1]?.id : null
     const nextThread = currentIndex < (adjacentThreads?.length ?? 0) - 1 ? adjacentThreads?.[currentIndex + 1]?.id : null
 
+    const replyReadiness = ['owner','admin'].includes(profile.role ?? '') ? await readReplyReadiness(createReplyRepository(),user.id,profile.organization_id,id) : {ready:false,reason:'owner_or_admin_required'}
     return NextResponse.json({
+      replyReadiness,
       thread: {
         id: thread.id,
         organizationId: thread.organization_id,
@@ -225,12 +148,7 @@ export async function GET(
         name: thread.campaigns.name,
         status: thread.campaigns.status,
       } : null,
-      mailbox: thread.mailboxes ? {
-        id: thread.mailboxes.id,
-        email: thread.mailboxes.email,
-        firstName: thread.mailboxes.first_name,
-        lastName: thread.mailboxes.last_name,
-      } : null,
+      mailbox: 'mailbox' in replyReadiness ? replyReadiness.mailbox ?? null : null,
       timeline,
       navigation: {
         prev: prevThread,
@@ -253,6 +171,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const { id } = await params
     const supabase = await createClient()
@@ -264,12 +183,12 @@ export async function PATCH(
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 

@@ -241,7 +241,7 @@ export function AIEmailWriter({ onSelect, senderName = '', senderCompany = '' }:
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Generated Emails</h3>
             <p className="text-sm text-muted-foreground">
-              Click "Use This Email" to add to your campaign
+              Click &ldquo;Use This Email&rdquo; to add to your campaign
             </p>
           </div>
 

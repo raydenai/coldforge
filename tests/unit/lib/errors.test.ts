@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   AppError,
   ValidationError,
@@ -22,7 +22,7 @@ describe('errors', () => {
       expect(error.code).toBe('TEST_CODE')
       expect(error.statusCode).toBe(400)
       expect(error.isOperational).toBe(true)
-      expect(error.context).toEqual({ key: 'value' })
+      expect(error.details).toEqual({ key: 'value' })
       expect(error.name).toBe('AppError')
     })
 
@@ -31,7 +31,7 @@ describe('errors', () => {
 
       expect(error.statusCode).toBe(500)
       expect(error.isOperational).toBe(true)
-      expect(error.context).toBeUndefined()
+      expect(error.details).toBeUndefined()
     })
 
     it('should have stack trace', () => {
@@ -76,10 +76,10 @@ describe('errors', () => {
       expect(error.name).toBe('ValidationError')
     })
 
-    it('should include context', () => {
+    it('should include details', () => {
       const error = new ValidationError('Invalid input', { field: 'email' })
 
-      expect(error.context).toEqual({ field: 'email' })
+      expect(error.details).toEqual({ field: 'email' })
     })
 
     it('should be instance of AppError', () => {
@@ -93,7 +93,7 @@ describe('errors', () => {
       const error = new AuthenticationError()
 
       expect(error.message).toBe('Authentication required')
-      expect(error.code).toBe('AUTH_ERROR')
+      expect(error.code).toBe('AUTHENTICATION_ERROR')
       expect(error.statusCode).toBe(401)
       expect(error.name).toBe('AuthenticationError')
     })
@@ -108,8 +108,8 @@ describe('errors', () => {
     it('should create authorization error with default message', () => {
       const error = new AuthorizationError()
 
-      expect(error.message).toBe('Permission denied')
-      expect(error.code).toBe('FORBIDDEN')
+      expect(error.message).toBe('Access denied')
+      expect(error.code).toBe('AUTHORIZATION_ERROR')
       expect(error.statusCode).toBe(403)
       expect(error.name).toBe('AuthorizationError')
     })
@@ -139,22 +139,29 @@ describe('errors', () => {
       const error = new NotFoundError('Campaign')
       expect(error.message).toBe('Campaign not found')
     })
+
+    it('should include the id when provided', () => {
+      const error = new NotFoundError('Domain', 'dom_123')
+      expect(error.message).toBe("Domain with id 'dom_123' not found")
+    })
   })
 
   describe('RateLimitError', () => {
     it('should create rate limit error with default retry', () => {
       const error = new RateLimitError()
 
-      expect(error.message).toBe('Rate limit exceeded')
+      expect(error.message).toBe('Too many requests')
       expect(error.code).toBe('RATE_LIMIT')
       expect(error.statusCode).toBe(429)
-      expect(error.context).toEqual({ retryAfter: 60 })
+      expect(error.details).toEqual({ retryAfter: 60 })
+      expect(error.retryAfter).toBe(60)
       expect(error.name).toBe('RateLimitError')
     })
 
     it('should use custom retry after', () => {
       const error = new RateLimitError(120)
-      expect(error.context).toEqual({ retryAfter: 120 })
+      expect(error.details).toEqual({ retryAfter: 120 })
+      expect(error.retryAfter).toBe(120)
     })
   })
 
@@ -176,7 +183,8 @@ describe('errors', () => {
       expect(error.message).toBe('External service error: Stripe')
       expect(error.code).toBe('EXTERNAL_SERVICE_ERROR')
       expect(error.statusCode).toBe(502)
-      expect(error.context).toEqual({ service: 'Stripe', originalMessage: undefined })
+      expect(error.details).toEqual({ service: 'Stripe', originalMessage: undefined })
+      expect(error.service).toBe('Stripe')
       expect(error.name).toBe('ExternalServiceError')
     })
 
@@ -184,9 +192,19 @@ describe('errors', () => {
       const originalError = new Error('Connection timeout')
       const error = new ExternalServiceError('Stripe', originalError)
 
-      expect(error.context).toEqual({
+      expect(error.details).toEqual({
         service: 'Stripe',
         originalMessage: 'Connection timeout',
+      })
+    })
+
+    it('should use an explicit message when given a string cause', () => {
+      const error = new ExternalServiceError('Winnr', 'Mailbox provisioning failed')
+
+      expect(error.message).toBe('Mailbox provisioning failed')
+      expect(error.details).toEqual({
+        service: 'Winnr',
+        originalMessage: 'Mailbox provisioning failed',
       })
     })
   })

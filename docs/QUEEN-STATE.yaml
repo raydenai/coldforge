@@ -1,0 +1,66 @@
+project: upmax-ai-outreach
+release_target: email-first-outreach
+phase: final_integration
+status: in_progress
+updated_at: 2026-10-06
+mission: >-
+  Operable cold email over Winnr with durable campaigns, an operator inbox,
+  approved copy and conversation agents, qualification, booking and callbacks.
+  Later social and LinkedIn adapters reuse the same lead and event contracts.
+repository: https://github.com/raydenai/coldforge
+branch: fix/mail-launch-readiness
+recovered_head: d391831352a27239a58c824e084047260fc02d94
+worktree: /Users/sezars/projects/coldforge/.claude/worktrees/launch-readiness-20261005
+historical_baseline: docs/BASELINE-FND-001.md
+plan: docs/superpowers/plans/2026-10-05-complete-outreach.md
+migration_runbook: docs/OUTREACH-MIGRATION-RUNBOOK.md
+
+local_evidence:
+  modules_020_through_036: independently_reviewed
+  strict_typecheck: passed
+  production_build: passed
+  lint: "0 errors,25 warnings"
+  unit_tests: "970 tests,90 files"
+  integration_tests: "325 tests,19 files"
+  required_postgres: "All16 suites;no skipped assertions"
+  operator_ui: "Independent closure accepted;15 focused lead/CSV checks pass"
+  pipeline_ui: "15 browser checks;desktop1440/mobile390;no errors or overflow"
+  mail_loop: "Four local TLS/Nodemailer+PostgreSQL scenarios included in full run"
+  auth_startup: "Independent review accepted;42 focused plus7 independent checks"
+  downstream_033: "Reviewed grants,current qualification and full CRM flow;114 focused checks"
+  private_backup_restore: >-
+    Public schema/data restored to isolated PostgreSQL17.9.
+    All14 original tables and4 existing rows preserved through020-033.
+    Managed auth dependencies use primary keys only;no full auth restore claimed.
+  live_runtime_metadata: "PostgreSQL17.6;extensions namespace;builtin SHA256 verified"
+
+live_state:
+  production_migrations_020_plus: not_applied
+  hosting_project: coldforge_in_existing_vercel_pro_team
+  hosting_framework: Next.js_on_Node24
+  production_environment: configured
+  auth_confirmation_origin: https://coldforge-wheat.vercel.app
+  auth_confirmation_required: true
+  deployment: not_created
+  winnr_token: saved_in_macos_keychain
+  winnr_readonly_probe: "valid read/write key;0 domains;0 mailboxes;0 warming accounts"
+  app_provider_connection: not_configured
+  live_email_delivery: unverified
+  live_booking_voice: unverified
+  provider_mutations_or_purchases: none
+  outbound_messages_or_calls: none
+
+remaining:
+  - Land through a PR with remote CI evidence.
+  - Apply reviewed additive migrations and deploy the landed source.
+  - Configure sender domains/mailboxes and actual provider accounts.
+  - Run a controlled pilot with selected recipients and verified receipts.
+
+operator_inputs:
+  - Sending domain and mailbox quantity are not yet selected.
+  - No real campaign audience/test recipient has been supplied.
+  - No app model,CRM,CloseBot,Retell or validation credential has been verified.
+
+authority: >-
+  Owner selected Winnr and appointed the driver product manager with autonomous
+  implementation authority. No arbitrary recipients, calls or purchases are inferred.

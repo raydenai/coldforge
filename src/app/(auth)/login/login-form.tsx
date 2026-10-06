@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { sanitizeInternalPath } from '@/lib/auth/redirect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +17,10 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/dashboard'
+  // Only same-origin, non-auth-loop destinations are honored.
+  const redirect = sanitizeInternalPath(searchParams.get('redirect'))
+  const awaitingVerification = searchParams.get('verify') === 'email'
+  const callbackFailed = searchParams.get('error') === 'confirm'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,6 +59,27 @@ export default function LoginForm() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {awaitingVerification && (
+              <div
+                role="status"
+                className="p-3 text-sm text-foreground bg-muted rounded-md"
+              >
+                Check your inbox for a confirmation link and open it in this
+                browser to finish creating your account. If you opened it in a
+                different browser, sign in below with your email and password.
+              </div>
+            )}
+            {callbackFailed && (
+              <div
+                role="alert"
+                className="p-3 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-200 rounded-md"
+              >
+                We couldn&apos;t finish sign-in from that link. It may have
+                expired or been opened in a different browser. If your email is
+                already confirmed, sign in below; otherwise create the account
+                again to get a fresh link.
+              </div>
+            )}
             {error && (
               <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950 rounded-md">
                 {error}

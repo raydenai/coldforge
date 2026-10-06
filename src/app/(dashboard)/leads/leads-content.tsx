@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -47,8 +48,12 @@ import {
   Search,
   FolderPlus,
   Check,
-  X
+  X,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
+import {parseLeadCsv} from '@/lib/outreach/lead-csv'
 import { toast } from 'sonner'
 
 interface Lead {
@@ -58,6 +63,7 @@ interface Lead {
   last_name?: string
   company?: string
   title?: string
+  phone?: string|null
   status: 'active' | 'unsubscribed' | 'bounced' | 'complained'
   list_id?: string
   created_at: string
@@ -71,14 +77,25 @@ interface LeadList {
   created_at: string
 }
 
+const PAGE_SIZE = 50
+
 export function LeadsContent() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [lists, setLists] = useState<LeadList[]>([])
-  const [loading, setLoading] = useState(true)
+  const [leadsLoading, setLeadsLoading] = useState(true)
+  const [listsLoading, setListsLoading] = useState(true)
+  const [leadsError, setLeadsError] = useState<string | null>(null)
+  const [listsError, setListsError] = useState<string | null>(null)
+  const [leadsMeasured, setLeadsMeasured] = useState(false)
+  const [listsMeasured, setListsMeasured] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [allLeadsTotal, setAllLeadsTotal] = useState<number | null>(null)
 
   // Dialogs
+  const [editingLeadId,setEditingLeadId] = useState<string|null>(null)
   const [showAddLeadDialog, setShowAddLeadDialog] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [showCreateListDialog, setShowCreateListDialog] = useState(false)
@@ -90,38 +107,132 @@ export function LeadsContent() {
     lastName: '',
     company: '',
     title: '',
+    phone: '',
   })
   const [newListName, setNewListName] = useState('')
+  const [phoneEdited,setPhoneEdited]=useState(false)
   const [creating, setCreating] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [importResult,setImportResult] = useState<{summary:string;messages:string[];totalMessages:number}|null>(null)
+  const editorGeneration=useRef(0)
+  const editorRequest=useRef(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const leadsRequestId = useRef(0)
+  const listsRequestId = useRef(0)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  async function fetchData() {
-    setLoading(true)
+  // Leads and lists are independent reads. Each tracks loading, error and
+  // measured-success separately so a failure in one never renders as a
+  // measured zero in the other.
+  const loadLeads = useCallback(async (targetPage: number, query: string, tabId: string) => {
+    const requestId = ++leadsRequestId.current
+    const trimmed = query.trim()
+    setLeadsLoading(true)
+    setLeadsError(null)
     try {
-      const [leadsRes, listsRes] = await Promise.all([
-        fetch('/api/leads'),
-        fetch('/api/leads/lists'),
-      ])
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        limit: String(PAGE_SIZE),
+      })
+      if (trimmed) params.set('search', trimmed)
+      if (tabId !== 'all') params.set('listId', tabId)
 
-      if (leadsRes.ok) {
-        const data = await leadsRes.json()
-        setLeads(data.leads || [])
+      const response = await fetch(`/api/leads?${params.toString()}`)
+      if (requestId !== leadsRequestId.current) return
+
+      if (!response.ok) {
+        // A failed read is unverified: clear prior counts rather than let a
+        // stale or zero value masquerade as a successful measurement.
+        setLeads([])
+        setTotalPages(0)
+        setLeadsMeasured(false)
+        setAllLeadsTotal(null)
+        setLeadsError('Could not load leads. Your audience is unverified.')
+        return
       }
-      if (listsRes.ok) {
-        const data = await listsRes.json()
-        setLists(data.lists || [])
-      }
+
+      const data = await response.json()
+      if (requestId !== leadsRequestId.current) return
+
+      const rows: Lead[] = Array.isArray(data.leads) ? data.leads : []
+      const measuredTotal =
+        typeof data.pagination?.total === 'number' ? data.pagination.total : rows.length
+      // A deletion may remove the final page; re-read the last valid page.
+      const lastPage = Math.max(1, typeof data.pagination?.totalPages === 'number' ? data.pagination.totalPages : Math.ceil(measuredTotal / PAGE_SIZE))
+      if (targetPage > lastPage) { setPage(lastPage); return }
+      setLeads(rows)
+      setTotalPages(
+        typeof data.pagination?.totalPages === 'number'
+          ? data.pagination.totalPages
+          : measuredTotal > 0
+            ? Math.ceil(measuredTotal / PAGE_SIZE)
+            : 0,
+      )
+      setLeadsMeasured(true)
+      // The card/tab represent the whole audience, so only an unfiltered
+      // "all" read may update the global total.
+      if (tabId === 'all' && trimmed === '') setAllLeadsTotal(measuredTotal)
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      if (requestId !== leadsRequestId.current) return
+      console.error('Failed to fetch leads:', error)
+      setLeads([])
+      setTotalPages(0)
+      setLeadsMeasured(false)
+      setAllLeadsTotal(null)
+      setLeadsError('Could not load leads. Your audience is unverified.')
       toast.error('Failed to load leads')
     } finally {
-      setLoading(false)
+      if (requestId === leadsRequestId.current) setLeadsLoading(false)
     }
+  }, [])
+
+  const loadLists = useCallback(async () => {
+    const requestId = ++listsRequestId.current
+    setListsLoading(true)
+    setListsError(null)
+    try {
+      const response = await fetch('/api/leads/lists')
+      if (requestId !== listsRequestId.current) return
+      if (!response.ok) {
+        setLists([])
+        setListsMeasured(false)
+        setListsError('Could not load lists.')
+        return
+      }
+      const data = await response.json()
+      if (requestId !== listsRequestId.current) return
+      setLists(Array.isArray(data.lists) ? data.lists : [])
+      setListsMeasured(true)
+    } catch (error) {
+      if (requestId !== listsRequestId.current) return
+      console.error('Failed to fetch lists:', error)
+      setLists([])
+      setListsMeasured(false)
+      setListsError('Could not load lists.')
+    } finally {
+      if (requestId === listsRequestId.current) setListsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadLeads(page, searchQuery, activeTab)
+  }, [page, searchQuery, activeTab, loadLeads])
+
+  useEffect(() => {
+    loadLists()
+  }, [loadLists])
+
+  function handleRefresh() {
+    loadLeads(page, searchQuery, activeTab)
+    loadLists()
+  }
+
+  function closeLeadEditor(){
+    editorGeneration.current++;setPhoneEdited(false);setShowAddLeadDialog(false);setEditingLeadId(null);setCreating(false)
+    setNewLead({email:'',firstName:'',lastName:'',company:'',title:'',phone:''})
+  }
+  function openNewLead(){
+    editorGeneration.current++;setPhoneEdited(false);setEditingLeadId(null);setCreating(false)
+    setNewLead({email:'',firstName:'',lastName:'',company:'',title:'',phone:''});setShowAddLeadDialog(true)
   }
 
   async function addLead() {
@@ -130,35 +241,42 @@ export function LeadsContent() {
       return
     }
 
+    const generation=editorGeneration.current,request=++editorRequest.current
+    const isCurrent=()=>generation===editorGeneration.current&&request===editorRequest.current
     setCreating(true)
     try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
+      const response = await fetch(editingLeadId ? `/api/leads/${editingLeadId}` : '/api/leads', {
+        method: editingLeadId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: newLead.email,
+          ...(editingLeadId ? {} : {email: newLead.email}),
           firstName: newLead.firstName,
           lastName: newLead.lastName,
           company: newLead.company,
           title: newLead.title,
+          ...(phoneEdited?{phone:newLead.phone.trim()}:{}),
         }),
       })
 
       if (response.ok) {
-        const data = await response.json()
-        setLeads([data.lead, ...leads])
-        setShowAddLeadDialog(false)
-        setNewLead({ email: '', firstName: '', lastName: '', company: '', title: '' })
-        toast.success('Lead added successfully')
+        if(isCurrent())closeLeadEditor()
+        toast.success(editingLeadId ? 'Lead details updated' : 'Lead added successfully')
+        // Re-read the audience instead of trusting a local mutation so the
+        // server-measured total stays authoritative.
+        if (page !== 1) {
+          setPage(1)
+        } else {
+          loadLeads(1, searchQuery, activeTab)
+        }
       } else {
         const error = await response.json()
-        toast.error(error.error?.message || 'Failed to add lead')
+        toast.error(typeof error.error === 'string' ? error.error : error.error?.message || 'Unable to save lead details')
       }
     } catch (error) {
       console.error('Failed to add lead:', error)
       toast.error('Failed to add lead')
     } finally {
-      setCreating(false)
+      if(isCurrent())setCreating(false)
     }
   }
 
@@ -171,8 +289,9 @@ export function LeadsContent() {
       })
 
       if (response.ok) {
-        setLeads(leads.filter(l => l.id !== id))
         toast.success('Lead deleted')
+        loadLeads(page, searchQuery, activeTab)
+        loadLists()
       } else {
         toast.error('Failed to delete lead')
       }
@@ -199,6 +318,7 @@ export function LeadsContent() {
       if (response.ok) {
         const data = await response.json()
         setLists([data.list, ...lists])
+        setListsMeasured(true)
         setShowCreateListDialog(false)
         setNewListName('')
         toast.success('List created successfully')
@@ -228,37 +348,11 @@ export function LeadsContent() {
 
     try {
       const text = await file.text()
-      const lines = text.split('\n').filter(line => line.trim())
-      const headers = lines[0]?.toLowerCase().split(',').map(h => h.trim()) ?? []
-
-      const emailIndex = headers.findIndex(h => h.includes('email'))
-      const firstNameIndex = headers.findIndex(h => h.includes('first') || h === 'firstname')
-      const lastNameIndex = headers.findIndex(h => h.includes('last') || h === 'lastname')
-      const companyIndex = headers.findIndex(h => h.includes('company') || h.includes('organization'))
-      const titleIndex = headers.findIndex(h => h.includes('title') || h.includes('position'))
-
-      if (emailIndex === -1) {
-        toast.error('CSV must have an email column')
-        setImporting(false)
-        return
-      }
-
-      const leadsToImport = []
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i]?.split(',').map(v => v.trim().replace(/^"|"$/g, '')) ?? []
-        const email = values[emailIndex]
-        if (email && email.includes('@')) {
-          leadsToImport.push({
-            email,
-            firstName: firstNameIndex >= 0 ? values[firstNameIndex] : undefined,
-            lastName: lastNameIndex >= 0 ? values[lastNameIndex] : undefined,
-            company: companyIndex >= 0 ? values[companyIndex] : undefined,
-            title: titleIndex >= 0 ? values[titleIndex] : undefined,
-          })
-        }
-      }
+      const {leads:leadsToImport,skipped,issues} = parseLeadCsv(text)
+      const localMessages=issues.map(issue=>`CSV record ${issue.record}: ${issue.email || '(blank email)'} — ${issue.reason}`)
 
       if (leadsToImport.length === 0) {
+        setImportResult({summary:`No valid leads sent; locally skipped ${skipped}`,messages:localMessages,totalMessages:skipped})
         toast.error('No valid leads found in CSV')
         setImporting(false)
         return
@@ -273,15 +367,22 @@ export function LeadsContent() {
 
       if (response.ok) {
         const data = await response.json()
-        toast.success(`Imported ${data.imported} leads successfully`)
-        fetchData()
+        const serverMessages:string[]=Array.isArray(data.errors)?data.errors.filter((message:unknown):message is string=>typeof message==='string'):[]
+        const summary = `Imported ${data.imported}; updated ${data.updated ?? 0}; server skipped ${data.skipped ?? 0}; locally skipped ${skipped}`
+        const messages=[...serverMessages.slice(0,100).map(message=>message.slice(0,1000)),...localMessages].slice(0,100)
+        setImportResult({summary,messages,totalMessages:serverMessages.length+skipped})
+        if(serverMessages.length||skipped)toast.error(`${summary}; some rows were not saved. Review the import result.`)
+        else toast.success(summary)
+        setPage(1)
+        loadLeads(1, searchQuery, activeTab)
+        loadLists()
       } else {
         const error = await response.json()
-        toast.error(error.error?.message || 'Failed to import leads')
+        toast.error(typeof error.error === 'string' ? error.error : error.error?.message || 'Failed to import leads')
       }
     } catch (error) {
       console.error('Failed to import leads:', error)
-      toast.error('Failed to parse CSV file')
+      toast.error(error instanceof Error ? error.message : 'Failed to parse CSV file')
     } finally {
       setImporting(false)
       if (fileInputRef.current) {
@@ -290,16 +391,10 @@ export function LeadsContent() {
     }
   }
 
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = searchQuery === '' ||
-      lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lead.company?.toLowerCase().includes(searchQuery.toLowerCase())
-
-    if (activeTab === 'all') return matchesSearch
-    return matchesSearch && lead.list_id === activeTab
-  })
+  const filteredLeads = leads
+  const hasFilters = searchQuery.trim() !== '' || activeTab !== 'all'
+  const activeCount = leads.filter(lead => lead.status === 'active').length
+  const bouncedCount = leads.filter(lead => lead.status === 'bounced').length
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -324,21 +419,30 @@ export function LeadsContent() {
             Manage your prospects and lead lists
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link href="/leads/validation">Verify lead emails</Link></Button>
+          <Button variant="outline" onClick={handleRefresh} disabled={leadsLoading || listsLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${leadsLoading || listsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button variant="outline" onClick={() => setShowImportDialog(true)}>
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Button onClick={() => setShowAddLeadDialog(true)}>
+          <Button onClick={openNewLead}>
             <Plus className="mr-2 h-4 w-4" />
             Add Lead
           </Button>
         </div>
       </div>
+
+      {importResult && <section role="region" aria-label="CSV import result" className="rounded-lg border p-4 space-y-2">
+        <h2 className="font-semibold">CSV import result</h2>
+        <p role="status">{importResult.summary}</p>
+        {importResult.messages.length>0 && <ul className="list-disc pl-5 break-words">{importResult.messages.map((message,index)=><li key={index}>{message}</li>)}</ul>}
+        {importResult.totalMessages>importResult.messages.length && <p>Showing {importResult.messages.length} of {importResult.totalMessages} correction messages.</p>}
+        <Button variant="outline" onClick={()=>setImportResult(null)}>Dismiss import result</Button>
+      </section>}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -348,7 +452,9 @@ export function LeadsContent() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{leads.length}</div>
+            <div className="text-2xl font-bold" data-testid="total-leads-count">
+              {leadsMeasured && allLeadsTotal !== null ? allLeadsTotal : 'Unknown'}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -357,9 +463,12 @@ export function LeadsContent() {
             <Check className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {leads.filter(l => l.status === 'active').length}
+            <div className="text-2xl font-bold" data-testid="active-leads-count">
+              {leadsMeasured ? activeCount : 'Unknown'}
             </div>
+            {leadsMeasured && (
+              <p className="text-xs text-muted-foreground">On this page</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -368,9 +477,12 @@ export function LeadsContent() {
             <X className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {leads.filter(l => l.status === 'bounced').length}
+            <div className="text-2xl font-bold" data-testid="bounced-leads-count">
+              {leadsMeasured ? bouncedCount : 'Unknown'}
             </div>
+            {leadsMeasured && (
+              <p className="text-xs text-muted-foreground">On this page</p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -379,7 +491,9 @@ export function LeadsContent() {
             <FolderPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lists.length}</div>
+            <div className="text-2xl font-bold" data-testid="lists-count">
+              {listsMeasured ? lists.length : 'Unknown'}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -391,10 +505,16 @@ export function LeadsContent() {
           <Input
             placeholder="Search leads..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setPage(1)
+            }}
             className="pl-10"
           />
         </div>
+        {listsError && !listsLoading && (
+          <span className="text-sm text-destructive">{listsError}</span>
+        )}
         <Button variant="outline" onClick={() => setShowCreateListDialog(true)}>
           <FolderPlus className="mr-2 h-4 w-4" />
           New List
@@ -402,10 +522,18 @@ export function LeadsContent() {
       </div>
 
       {/* Leads Table */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value)
+          setPage(1)
+        }}
+      >
         <TabsList>
-          <TabsTrigger value="all">All Leads ({leads.length})</TabsTrigger>
-          {lists.map(list => (
+          <TabsTrigger value="all" data-testid="all-leads-tab">
+            All Leads ({leadsMeasured && allLeadsTotal !== null ? allLeadsTotal : 'Unknown'})
+          </TabsTrigger>
+          {listsMeasured && lists.map(list => (
             <TabsTrigger key={list.id} value={list.id}>
               {list.name} ({list.lead_count})
             </TabsTrigger>
@@ -413,99 +541,149 @@ export function LeadsContent() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded" />
-              ))}
-            </div>
-          ) : filteredLeads.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>No leads yet</CardTitle>
-                <CardDescription>
-                  Import leads from a CSV file or add them manually to get started
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-center gap-4">
-                <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import CSV
-                </Button>
-                <Button onClick={() => setShowAddLeadDialog(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Lead
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          {lead.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {lead.first_name || lead.last_name
-                          ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {lead.company ? (
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            {lead.company}
-                          </div>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>{lead.title || '-'}</TableCell>
-                      <TableCell>{getStatusBadge(lead.status)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => deleteLead(lead.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+          <div className="space-y-4">
+            {leadsLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+                ))}
+              </div>
+            ) : leadsError ? (
+              <Card>
+                <CardHeader className="text-center">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                    <AlertCircle className="h-6 w-6 text-destructive" />
+                  </div>
+                  <CardTitle>Couldn&apos;t load leads</CardTitle>
+                  <CardDescription>{leadsError}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <Button variant="outline" onClick={handleRefresh} disabled={leadsLoading}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : filteredLeads.length === 0 ? (
+              <Card>
+                <CardHeader className="text-center">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle>{hasFilters ? 'No matching leads' : 'No leads yet'}</CardTitle>
+                  <CardDescription>
+                    {hasFilters
+                      ? 'Try a different search or list filter.'
+                      : 'Import leads from a CSV file or add them manually to get started'}
+                  </CardDescription>
+                </CardHeader>
+                {!hasFilters && (
+                  <CardContent className="flex justify-center gap-4">
+                    <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Import CSV
+                    </Button>
+                    <Button onClick={openNewLead}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Lead
+                    </Button>
+                  </CardContent>
+                )}
+              </Card>
+            ) : (
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-12"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLeads.map((lead) => (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            {lead.email}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {lead.first_name || lead.last_name
+                            ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim()
+                            : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {lead.company ? (
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4 text-muted-foreground" />
+                              {lead.company}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>{lead.title || '-'}</TableCell>
+                        <TableCell>{getStatusBadge(lead.status)}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" aria-label={`Actions for ${lead.email}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => { editorGeneration.current++;setPhoneEdited(false);setCreating(false);setEditingLeadId(lead.id);setNewLead({email:lead.email,firstName:lead.first_name??'',lastName:lead.last_name??'',company:lead.company??'',title:lead.title??'',phone:lead.phone??''});setShowAddLeadDialog(true) }}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => deleteLead(lead.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
+
+            {!leadsLoading && !leadsError && totalPages > 1 && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -519,12 +697,12 @@ export function LeadsContent() {
       />
 
       {/* Add Lead Dialog */}
-      <Dialog open={showAddLeadDialog} onOpenChange={setShowAddLeadDialog}>
+      <Dialog open={showAddLeadDialog} onOpenChange={open=>{if(!open)closeLeadEditor();else setShowAddLeadDialog(true)}}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Lead</DialogTitle>
+            <DialogTitle>{editingLeadId ? 'Edit lead details' : 'Add New Lead'}</DialogTitle>
             <DialogDescription>
-              Add a single lead to your database
+              {editingLeadId ? 'Update contact details. Email and verification are preserved.' : 'Add a single lead to your database'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -532,11 +710,17 @@ export function LeadsContent() {
               <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
+                readOnly={!!editingLeadId}
                 type="email"
                 placeholder="john@company.com"
                 value={newLead.email}
                 onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" type="tel" inputMode="tel" maxLength={50} aria-describedby="phone-help" placeholder="+14155552671" value={newLead.phone} onChange={event=>{setPhoneEdited(true);setNewLead({...newLead,phone:event.target.value})}} />
+              <p id="phone-help" className="text-sm text-muted-foreground">Use international format. Call approval is managed separately.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -578,11 +762,11 @@ export function LeadsContent() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddLeadDialog(false)}>
+            <Button variant="outline" onClick={closeLeadEditor}>
               Cancel
             </Button>
             <Button onClick={addLead} disabled={creating}>
-              {creating ? 'Adding...' : 'Add Lead'}
+              {creating ? 'Saving...' : editingLeadId ? 'Save lead changes' : 'Add Lead'}
             </Button>
           </DialogFooter>
         </DialogContent>

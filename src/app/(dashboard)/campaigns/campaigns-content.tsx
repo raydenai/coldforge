@@ -47,9 +47,9 @@ interface Campaign {
     clicked: number
     replied: number
     bounced: number
-  }
-  created_at: string
-  updated_at: string
+  } | null
+  createdAt: string
+  updatedAt: string
 }
 
 export function CampaignsContent() {
@@ -113,19 +113,26 @@ export function CampaignsContent() {
 
   async function updateCampaignStatus(id: string, status: string) {
     try {
-      const response = await fetch(`/api/campaigns/${id}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/campaigns/${id}/actions`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ action: status === 'active' ? 'start' : 'pause' }),
       })
 
       if (response.ok) {
-        setCampaigns(campaigns.map(c =>
-          c.id === id ? { ...c, status: status as Campaign['status'] } : c
+        const data = await response.json()
+        const returnedStatus = data.status ?? data.campaign?.status
+        if (!['draft', 'active', 'paused', 'completed', 'archived'].includes(returnedStatus)) {
+          toast.error('Failed to update campaign')
+          return
+        }
+        setCampaigns(previous => previous.map(c =>
+          c.id === id ? { ...c, status: returnedStatus } : c
         ))
-        toast.success(`Campaign ${status === 'active' ? 'started' : 'paused'}`)
+        toast.success(`Campaign ${returnedStatus === 'active' ? 'started' : returnedStatus}`)
       } else {
-        toast.error('Failed to update campaign')
+        const error = await response.json()
+        toast.error(typeof error.error === 'string' ? error.error : error.error?.message || 'Failed to update campaign')
       }
     } catch (error) {
       console.error('Failed to update campaign:', error)
@@ -214,7 +221,7 @@ export function CampaignsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {campaigns.reduce((sum, c) => sum + (c.stats?.sent || 0), 0)}
+              {campaigns.every(c => c.stats?.sent !== undefined) ? campaigns.reduce((sum, c) => sum + (c.stats?.sent ?? 0), 0) : 'Unknown'}
             </div>
           </CardContent>
         </Card>
@@ -225,7 +232,7 @@ export function CampaignsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {campaigns.reduce((sum, c) => sum + (c.stats?.replied || 0), 0)}
+              {campaigns.every(c => c.stats?.replied !== undefined) ? campaigns.reduce((sum, c) => sum + (c.stats?.replied ?? 0), 0) : 'Unknown'}
             </div>
           </CardContent>
         </Card>
@@ -268,7 +275,7 @@ export function CampaignsContent() {
                       <h3 className="font-semibold text-lg">{campaign.name}</h3>
                       <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <Badge variant="secondary">{campaign.status}</Badge>
-                        <span>Created {new Date(campaign.created_at).toLocaleDateString()}</span>
+                        <span>Created {new Date(campaign.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -277,19 +284,19 @@ export function CampaignsContent() {
                   <div className="hidden md:flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-1">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{campaign.stats?.sent || 0} sent</span>
+                      <span>{campaign.stats?.sent ?? 'Unknown'} sent</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Eye className="h-4 w-4 text-muted-foreground" />
-                      <span>{campaign.stats?.opened || 0} opened</span>
+                      <span>{campaign.stats?.opened ?? 'Unknown'} opened</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MousePointer className="h-4 w-4 text-muted-foreground" />
-                      <span>{campaign.stats?.clicked || 0} clicked</span>
+                      <span>{campaign.stats?.clicked ?? 'Unknown'} clicked</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <span>{campaign.stats?.replied || 0} replies</span>
+                      <span>{campaign.stats?.replied ?? 'Unknown'} replies</span>
                     </div>
                   </div>
 

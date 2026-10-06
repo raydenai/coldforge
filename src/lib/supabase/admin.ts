@@ -5,21 +5,17 @@ export type TypedSupabaseClient = SupabaseClient<Database>
 
 // Admin client for server-side operations that don't need user context
 // Uses service role key for full access (use carefully)
-let adminClient: SupabaseClient | null = null
+let adminClient: SupabaseClient<Database> | null = null
 
-// Returns untyped client to avoid complex Supabase type inference issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createAdminClient(): any {
-  if (adminClient) return adminClient
-
+export function createAdminClient(): SupabaseClient<Database> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables')
+    throw new Error('Supabase service-role storage is not configured')
   }
-
-  adminClient = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
+  if (adminClient) return adminClient
+  adminClient = createSupabaseClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false

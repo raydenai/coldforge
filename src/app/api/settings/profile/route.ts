@@ -1,3 +1,4 @@
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -39,7 +40,7 @@ export async function GET() {
         const adminClient = createAdminClient()
         const { data: newProfile, error: insertError } = await adminClient
           .from('users')
-          // @ts-expect-error - Supabase type inference issue with Json column inserts
+
           .insert({
             id: user.id,
             email: user.email!,
@@ -89,6 +90,7 @@ export async function GET() {
 
 // PATCH /api/settings/profile - Update user profile
 export async function PATCH(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
 
@@ -141,7 +143,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('users')
-      // @ts-expect-error - Supabase type inference issue with Json column updates
+
       .update(updateObj)
       .eq('id', user.id)
       .select('id, email, full_name, avatar_url, role, settings')

@@ -45,7 +45,7 @@ export function CreateOrganization({ onSuccess }: CreateOrganizationProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create organization');
+        throw new Error(typeof data.error === 'string' ? data.error : data.error?.message || 'Failed to create organization');
       }
 
       toast.success('Organization created successfully!');
@@ -72,7 +72,7 @@ export function CreateOrganization({ onSuccess }: CreateOrganizationProps) {
           </div>
           <CardTitle className="text-2xl font-bold">Create Your Organization</CardTitle>
           <CardDescription>
-            Set up your organization to start sending campaigns
+            Set up your organization to prepare campaigns and connect Winnr
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

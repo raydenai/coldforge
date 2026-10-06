@@ -1,3 +1,4 @@
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { type ReplyCategory, type ReplySentiment, type ReplyStatus } from '@/lib/replies'
@@ -43,12 +44,12 @@ export async function GET(
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
@@ -139,6 +140,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const { id } = await params
     const supabase = await createClient()
@@ -150,12 +152,12 @@ export async function PUT(
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
@@ -228,9 +230,10 @@ export async function PUT(
 
 // DELETE /api/replies/[id] - Archive reply
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const { id } = await params
     const supabase = await createClient()
@@ -242,12 +245,12 @@ export async function DELETE(
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 

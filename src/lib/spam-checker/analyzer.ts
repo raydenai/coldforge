@@ -5,7 +5,6 @@ import { SPAM_TRIGGERS, SPAM_PATTERNS, SpamCheckResult, SpamIssue } from './spam
  */
 export function analyzeContent(subject: string, body: string): SpamCheckResult {
   const fullText = `${subject} ${body}`;
-  const lowerText = fullText.toLowerCase();
   const issues: SpamIssue[] = [];
   let penalty = 0;
 
@@ -222,7 +221,7 @@ function generateSuggestions(
 
 function generateSummary(
   score: number,
-  grade: string,
+  _grade: string,
   issues: SpamIssue[]
 ): string {
   const critical = issues.filter(i => i.type === 'critical').length;
