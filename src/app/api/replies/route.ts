@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { unavailableTransport } from '@/lib/email-core/transport-gate'
 import {
-  autoCategorize,
   type ReplyCategory,
   type ReplySentiment,
   type ReplyStatus,
 } from '@/lib/replies'
-import { listRepliesQuerySchema, createReplySchema } from '@/lib/schemas'
-import { validateRequest, validateQuery } from '@/lib/validation'
+import { listRepliesQuerySchema } from '@/lib/schemas'
+import { validateQuery } from '@/lib/validation'
 import { getRepliesWithContext, getInboxStats } from '@/lib/db/queries'
 
 // GET /api/replies - List replies (inbox)
@@ -24,12 +23,12 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const { data: profile } = await supabase
-      .from('profiles')
+      .from('users')
       .select('organization_id')
       .eq('id', user.id)
       .single() as { data: { organization_id: string } | null }
 
-    if (!profile) {
+    if (!profile?.organization_id) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
@@ -100,7 +99,7 @@ export async function GET(request: NextRequest) {
         outOfOffice: inboxStats.outOfOffice,
         meetingRequests: inboxStats.meetingRequests,
         needsReply: inboxStats.needsReply,
-        todayReceived: 0 // Would need separate query with date filter
+        todayReceived: null // Not measured by this query
       },
     })
   } catch (error) {
@@ -112,121 +111,5 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/replies - Create reply (from webhook/email receive)
-export async function POST(request: NextRequest) {
-  try {
-    // Validate request body
-    const validation = await validateRequest(request, createReplySchema)
-    if (!validation.success) return validation.error
-
-    const {
-      organizationId,
-      campaignId,
-      leadId,
-      mailboxId,
-      threadId,
-      messageId,
-      inReplyTo,
-      from,
-      fromName,
-      to,
-      subject,
-      bodyText,
-      bodyHtml,
-      receivedAt,
-    } = validation.data
-
-    // Auto-categorize the reply
-    const categorization = autoCategorize(subject, bodyText)
-
-    // Use admin client for INSERT to bypass RLS
-    const adminClient = createAdminClient()
-
-    const { data: reply, error } = await adminClient
-      .from('replies')
-      .insert({
-        organization_id: organizationId,
-        campaign_id: campaignId,
-        lead_id: leadId,
-        mailbox_id: mailboxId,
-        thread_id: threadId,
-        message_id: messageId,
-        in_reply_to: inReplyTo,
-        from_email: from,
-        from_name: fromName,
-        to_email: to,
-        subject,
-        body_text: bodyText,
-        body_html: bodyHtml,
-        category: categorization.category,
-        sentiment: categorization.sentiment,
-        status: 'unread',
-        is_auto_detected: true,
-        received_at: receivedAt || new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (error) {
-      throw error
-    }
-
-    // Update or create thread (use admin client for upsert)
-    await adminClient
-      .from('threads')
-      .upsert({
-        id: threadId,
-        organization_id: organizationId,
-        campaign_id: campaignId,
-        lead_id: leadId,
-        mailbox_id: mailboxId,
-        subject: subject.replace(/^(re|fwd?|fw):\s*/gi, '').trim(),
-        participant_email: from,
-        participant_name: fromName,
-        last_message_at: receivedAt || new Date().toISOString(),
-        category: categorization.category,
-        sentiment: categorization.sentiment,
-        status: 'active',
-      }, {
-        onConflict: 'id',
-      })
-
-    // Increment thread message count (use admin client for RPC)
-    await adminClient.rpc('increment_thread_message_count', {
-      p_thread_id: threadId,
-    })
-
-    // Update lead status if interested (use admin client for UPDATE)
-    if (leadId && categorization.category === 'interested') {
-      await adminClient
-        .from('leads')
-        .update({
-          status: 'interested',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', leadId)
-    }
-
-    // Handle unsubscribe requests (use admin client for UPDATE)
-    if (leadId && categorization.category === 'unsubscribe') {
-      await adminClient
-        .from('leads')
-        .update({
-          status: 'unsubscribed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', leadId)
-    }
-
-    return NextResponse.json({
-      reply,
-      categorization,
-    }, { status: 201 })
-  } catch (error) {
-    console.error('Create reply error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+// Provider ingestion is integrated through a separately verified adapter.
+export async function POST(request: NextRequest) { return unavailableTransport(request) }

@@ -30,6 +30,7 @@ export const onRequestError = async (
   request: { path: string; method: string },
   context: { routerKind: string; routePath: string; routeType: string }
 ) => {
+  void context
   // Track request errors in Sentry
   const { trackAPIError } = await import('@/lib/sentry')
 

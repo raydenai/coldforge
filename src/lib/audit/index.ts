@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { randomUUID } from 'node:crypto'
+import { createOutreachEventRepository } from '@/lib/outreach/event-database'
+import { createOutreachEventService } from '@/lib/outreach/events'
 
 export interface AuditEvent {
   user_id: string
@@ -26,28 +28,22 @@ export type ResourceType =
   | 'api_key' | 'webhook' | 'settings'
 
 export async function logAuditEvent(event: AuditEvent): Promise<void> {
-  try {
-    const supabase = await createClient()
-
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AUDIT]', JSON.stringify(event, null, 2))
-    }
-
-    // Insert into audit_logs table (if it exists)
-    // If table doesn't exist, just log to console
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('audit_logs') as any).insert({
-      ...event,
-      created_at: new Date().toISOString()
-    }).catch(() => {
-      // Table might not exist yet - that's OK
-      console.log('[AUDIT] (no table)', JSON.stringify(event))
-    })
-  } catch (error) {
-    // Never fail the request due to audit logging
-    console.error('[AUDIT ERROR]', error)
-  }
+  // Tenant-free auth events do not belong in an organization event stream.
+  if (!event.organization_id) return
+  const service = createOutreachEventService({ repository: createOutreachEventRepository() })
+  await service.append({ event: {
+    version: 1,
+    organizationId: event.organization_id,
+    type: `audit.${event.resource_type}.${event.action}`,
+    source: 'coldforge',
+    sourceEventId: randomUUID(),
+    occurredAt: new Date().toISOString(),
+    correlationId: null,
+    causationId: null,
+    subject: {},
+    // Deliberately omit arbitrary details, network addresses and request bodies.
+    data: { actorUserId: event.user_id, resourceType: event.resource_type, resourceId: event.resource_id ?? null },
+  }, consumers: [] })
 }
 
 // Helper for common patterns

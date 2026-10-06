@@ -51,9 +51,5 @@ if (dsn) {
       return event
     },
 
-    // Add user feedback for errors
-    beforeSendFeedback(feedback) {
-      return feedback
-    },
   })
 }

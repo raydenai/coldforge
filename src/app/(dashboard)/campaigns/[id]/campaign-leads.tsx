@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +45,7 @@ import { toast } from 'sonner'
 
 interface CampaignLeadsProps {
   campaignId: string
+  onUpdated?: (updatedAt: string) => void
 }
 
 interface Lead {
@@ -66,10 +67,11 @@ interface LeadList {
   leadCount: number
 }
 
-export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
+export function CampaignLeads({ campaignId, onUpdated }: CampaignLeadsProps) {
   const [leads, setLeads] = useState<Lead[]>([])
   const [leadLists, setLeadLists] = useState<LeadList[]>([])
   const [loading, setLoading] = useState(true)
+  const [readError, setReadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -77,6 +79,7 @@ export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
   const [showAddLeads, setShowAddLeads] = useState(false)
   const [selectedLists, setSelectedLists] = useState<string[]>([])
   const [adding, setAdding] = useState(false)
+  const leadsRequestId = useRef(0)
 
   const pageSize = 25
 
@@ -86,7 +89,9 @@ export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
   }, [campaignId, currentPage, statusFilter, searchQuery])
 
   async function fetchLeads() {
+    const requestId = ++leadsRequestId.current
     setLoading(true)
+    setReadError(null)
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -96,16 +101,22 @@ export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
       if (searchQuery) params.append('search', searchQuery)
 
       const response = await fetch(`/api/campaigns/${campaignId}/leads?${params}`)
-      if (response.ok) {
-        const data = await response.json()
-        setLeads(data.leads || [])
-        setTotalPages(data.totalPages || 1)
+      if (requestId !== leadsRequestId.current) return
+      if (!response.ok) {
+        setReadError('Could not load this campaign’s leads. The audience is unverified.')
+        return
       }
+      const data = await response.json()
+      if (requestId !== leadsRequestId.current) return
+      setLeads(data.leads || [])
+      setTotalPages(data.totalPages || 1)
     } catch (error) {
+      if (requestId !== leadsRequestId.current) return
       console.error('Failed to fetch leads:', error)
+      setReadError('Could not load this campaign’s leads. The audience is unverified.')
       toast.error('Failed to load leads')
     } finally {
-      setLoading(false)
+      if (requestId === leadsRequestId.current) setLoading(false)
     }
   }
 
@@ -137,7 +148,8 @@ export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
 
       if (response.ok) {
         const data = await response.json()
-        toast.success(`Added ${data.addedCount} leads to campaign`)
+        onUpdated?.(data.campaign.updatedAt)
+        toast.success(`Added ${data.addedCount} validated leads to campaign`)
         setShowAddLeads(false)
         setSelectedLists([])
         fetchLeads()
@@ -220,6 +232,17 @@ export function CampaignLeads({ campaignId }: CampaignLeadsProps) {
                   <Skeleton className="h-4 w-20" />
                 </div>
               ))}
+            </div>
+          ) : readError ? (
+            <div role="alert" className="flex flex-col items-center justify-center py-12">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+              <h3 className="font-semibold mb-1">Couldn&apos;t load leads</h3>
+              <p className="text-sm text-muted-foreground mb-4 text-center max-w-sm">
+                {readError}
+              </p>
+              <Button variant="outline" onClick={fetchLeads} disabled={loading}>
+                Retry
+              </Button>
             </div>
           ) : leads.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">

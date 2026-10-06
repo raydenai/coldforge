@@ -14,11 +14,47 @@ env:
   NEXT_TELEMETRY_DISABLED: '1'
 
 jobs:
-  # Fast gates that are green today. These must stay green.
+  # Fast gates. The TypeScript build is green on this baseline, so typecheck and
+  # build are part of the required signal below, not a known-red tracker.
   quality:
     name: Lint and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      # Additive outreach migrations 020→033 are proven against a real
+      # PostgreSQL 17 server over the exact committed live-schema baseline.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 55439:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    # Every disposable fixture database for the PostgreSQL integration shard.
+    # All URLs are set so no PostgreSQL test can silently skip in CI.
+    env:
+      WINNR_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/winnr_test
+      OUTREACH_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_test
+      OUTREACH_CAMPAIGN_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/campaign_core_test
+      SUPPRESSION_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/coldforge_suppression_test
+      IDENTITY_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/coldforge_identity_test
+      WINNR_SMTP_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/winnr_smtp_test
+      EMAIL_DISPATCH_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/email_dispatch_test
+      WINNR_INGESTION_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/winnr_ingestion_test
+      LEAD_VALIDATION_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/coldforge_lead_validation_test
+      OUTREACH_REPLIES_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_replies_test
+      OUTREACH_AGENTS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_agents_test
+      OUTREACH_OPERATIONS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_operations_test
+      OUTREACH_RECONCILIATION_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_reconciliation_test
+      OUTREACH_DOWNSTREAM_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_downstream_test
+      OUTREACH_MAIL_LOOP_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/outreach_mail_loop_test
+      OUTREACH_CHAIN_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:55439/coldforge_outreach_chain_test
     steps:
       - uses: actions/checkout@v4
 
@@ -27,11 +63,37 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create disposable fixture databases
+        run: |
+          set -euo pipefail
+          admin='postgres://postgres:postgres@127.0.0.1:55439/postgres'
+          # Cluster-global roles must exist before any parallel fixture tests.
+          psql "$admin" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            CREATE ROLE anon NOLOGIN;
+            CREATE ROLE authenticated NOLOGIN;
+            CREATE ROLE service_role NOLOGIN BYPASSRLS;
+          END $$;
+          SQL
+          for db in winnr_test outreach_test campaign_core_test coldforge_suppression_test \
+                    coldforge_identity_test winnr_smtp_test email_dispatch_test \
+                    winnr_ingestion_test coldforge_lead_validation_test coldforge_outreach_chain_test \
+                    outreach_replies_test outreach_agents_test outreach_operations_test outreach_reconciliation_test \
+                    outreach_downstream_test outreach_mail_loop_test; do
+            psql "$admin" -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$db\""
+          done
+
       - name: Install dependencies
         run: npm ci
 
       - name: Report Node and npm versions
         run: node -v && npm -v
+
+      - name: Verify PostgreSQL fixture environment
+        run: node scripts/test-outreach-postgres.mjs --check
 
       - name: Lint
         run: npm run lint
@@ -39,22 +101,11 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
-      - name: Integration tests
-        run: npm run test:integration
+      - name: Integration tests with required PostgreSQL coverage
+        run: node scripts/test-outreach-postgres.mjs --all-integration
 
-  # Gates that are known-red on the current baseline.
-  #
-  # They are NOT marked continue-on-error and NOT excluded: a red signal here is
-  # the accurate one, and it is the tracking mechanism for the work below.
-  #   - typecheck: `tsc --noEmit` crashes with "Map maximum size exceeded" via
-  #     src/lib/billing/invoices.ts, and 1156 further type errors sit behind it.
-  #     Root cause and evidence: docs/BASELINE-FND-001.md (FND-004).
-  #   - build: blocked by the same typecheck failure.
-  #
-  # Do not silence these to make CI green. They go green when the schema/type
-  # drift is reconciled.
   typecheck-and-build:
-    name: Typecheck and build (known-red, tracks FND-004)
+    name: Typecheck and build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -67,6 +118,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # `tsc` consumes the generated route types; without this the Next.js
+      # typegen output is stale and the typecheck is not reproducible.
+      - name: Generate route types
+        run: npm run typegen
 
       - name: Typecheck
         run: npm run typecheck

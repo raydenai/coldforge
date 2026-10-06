@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   AlertTriangle,
   CheckCircle,
@@ -119,7 +118,6 @@ export function SpamScore({ subject, content, showDetails = true }: SpamScorePro
 
   const criticalIssues = result?.issues.filter(i => i.type === 'critical') || [];
   const warningIssues = result?.issues.filter(i => i.type === 'warning') || [];
-  const cautionIssues = result?.issues.filter(i => i.type === 'caution' || i.type === 'pattern') || [];
 
   return (
     <Card className="border-l-4" style={{

@@ -25,13 +25,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const dynamic = 'force-dynamic'
 
 /** Resolve the lead's address from the token's lead id. */
-async function resolveLeadEmail(leadId: string): Promise<string | null> {
+async function resolveLeadEmail(leadId: string, organizationId: string): Promise<string | null> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('leads')
     .select('email')
     .eq('id', leadId)
+    .eq('organization_id', organizationId)
     .limit(1)
     .single()
 
@@ -60,13 +61,14 @@ async function applyUnsubscribe(token: string): Promise<
     throw error
   }
 
-  const email = await resolveLeadEmail(payload.leadId)
+  const email = await resolveLeadEmail(payload.leadId, payload.workspaceId)
   if (!email) {
     return { ok: false, status: 400, message: 'This unsubscribe link is not valid.' }
   }
 
   const result = await recordSuppression({
     email,
+    leadId: payload.leadId,
     workspaceId: payload.workspaceId,
     reason: 'unsubscribe',
     source: 'one-click',
@@ -82,13 +84,6 @@ async function applyUnsubscribe(token: string): Promise<
       message: 'We could not record your request. Please contact support.',
     }
   }
-
-  // Stop the lead's in-flight sequence as well as future sends.
-  const supabase = createAdminClient()
-  await supabase
-    .from('leads')
-    .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
-    .eq('id', payload.leadId)
 
   return { ok: true }
 }

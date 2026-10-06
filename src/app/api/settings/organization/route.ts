@@ -1,6 +1,8 @@
+import { z } from 'zod'
+import { bootstrapIdentity } from '@/lib/email-core/identity'
+import { assertSameOrigin, parseJsonRequest, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { Json } from '@/types/database'
 import { logAuditEventAsync, getRequestMetadata } from '@/lib/audit'
 
@@ -31,116 +33,15 @@ interface TeamMember {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if user already has an organization
-    const { data: existingProfile } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single() as { data: { organization_id: string | null } | null }
-
-    if (existingProfile?.organization_id) {
-      return NextResponse.json(
-        { error: 'User already has an organization' },
-        { status: 400 }
-      )
-    }
-
-    const body = await request.json()
-    const { name } = body
-
-    if (!name || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Organization name is required' },
-        { status: 400 }
-      )
-    }
-
-    // Use admin client to bypass RLS
-    const adminClient = createAdminClient()
-
-    // Create unique slug
-    const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    const slug = `${baseSlug}-${user.id.slice(0, 8)}`
-
-    // Create organization using admin client (bypasses RLS)
-    const { data: organization, error: orgError } = await adminClient
-      .from('organizations')
-      .insert({
-        name: name.trim(),
-        slug,
-        plan: 'starter',
-        settings: {}
-      })
-      .select('id, name, slug, plan')
-      .single()
-
-    if (orgError) {
-      console.error('Failed to create organization:', orgError)
-      return NextResponse.json(
-        { error: 'Failed to create organization' },
-        { status: 500 }
-      )
-    }
-
-    // Check if user profile exists
-    const { data: existingUser } = await adminClient
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .single()
-
-    if (existingUser) {
-      // Update existing profile
-      const { error: updateError } = await adminClient
-        .from('users')
-        .update({
-          organization_id: organization.id,
-          role: 'owner'
-        })
-        .eq('id', user.id)
-
-      if (updateError) {
-        console.error('Failed to update user profile:', updateError)
-      }
-    } else {
-      // Create new profile
-      const { error: insertError } = await adminClient
-        .from('users')
-        .insert({
-          id: user.id,
-          organization_id: organization.id,
-          email: user.email!,
-          full_name: user.user_metadata?.full_name || null,
-          role: 'owner',
-          settings: {}
-        })
-
-      if (insertError) {
-        console.error('Failed to create user profile:', insertError)
-      }
-    }
-
-    return NextResponse.json({
-      organization: {
-        id: organization.id,
-        name: organization.name,
-        slug: organization.slug,
-        plan: organization.plan
-      }
-    })
-  } catch (error) {
-    console.error('Failed to create organization:', error)
-    return NextResponse.json(
-      { error: 'Failed to create organization' },
-      { status: 500 }
-    )
-  }
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    assertSameOrigin(request)
+    const body = z.object({ name: z.string().trim().min(1).max(100) }).strict().parse(await parseJsonRequest(request))
+    const membership = await bootstrapIdentity(user.id, body.name)
+    const { data: organization, error } = await supabase.from('organizations').select('id, name, slug, plan').eq('id', membership.organization_id).single()
+    if (error || !organization) return NextResponse.json({ error: 'Organization unavailable' }, { status: 503 })
+    return NextResponse.json({ organization })
+  } catch (error) { return winnrErrorResponse(error) }
 }
 
 // GET /api/settings/organization - Get organization details
@@ -218,6 +119,7 @@ export async function GET() {
 
 // PATCH /api/settings/organization - Update organization
 export async function PATCH(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
 
@@ -287,7 +189,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: organization, error } = await supabase
       .from('organizations')
-      // @ts-expect-error - Supabase type inference issue with Json column updates
+
       .update(updateObj)
       .eq('id', profile.organization_id)
       .select('id, name, slug, plan, settings')

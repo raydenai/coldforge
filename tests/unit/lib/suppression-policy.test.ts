@@ -16,8 +16,8 @@ const selectChain = {
 
 const mockFrom = vi.fn(() => selectChain)
 
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: mockFrom }),
+vi.mock('@/lib/compliance/suppression-database', () => ({
+  createSuppressionClient: () => ({ from: mockFrom }),
 }))
 
 /** Make the suppression lookup return a specific row (or none). */

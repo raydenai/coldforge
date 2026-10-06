@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: 'InstantScale',
-  description: 'Cold email outreach platform with infrastructure automation',
+  description: 'Cold email outreach workspace with Winnr mailboxes',
   url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   ogImage: '/og.png',
   links: {
@@ -15,14 +15,11 @@ export const navConfig = {
     { title: 'Leads', href: '/leads' },
   ],
   sidebarNav: [
+    { title: 'Winnr', href: '/winnr', icon: 'Mail' },
     { title: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
     { title: 'Campaigns', href: '/campaigns', icon: 'Send' },
     { title: 'Leads', href: '/leads', icon: 'Users' },
-    { title: 'Email Accounts', href: '/accounts', icon: 'Mail' },
-    { title: 'Domains', href: '/domains', icon: 'Globe' },
-    { title: 'Warmup', href: '/warmup', icon: 'Flame' },
     { title: 'Inbox', href: '/inbox', icon: 'Inbox' },
-    { title: 'Analytics', href: '/analytics', icon: 'BarChart3' },
     { title: 'Settings', href: '/settings', icon: 'Settings' },
   ],
 }

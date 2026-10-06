@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Private release artifacts and isolated checkouts are not application source.
+    ".local/**",
+    ".claude/worktrees/**",
   ]),
 ]);
 

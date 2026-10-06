@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,8 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   ArrowLeft,
-  Play,
-  Pause,
   Settings,
   Users,
   BarChart3,
@@ -21,10 +19,10 @@ import {
   AlertCircle,
   Layers
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { SequenceEditor } from './sequence-editor'
 import { CampaignLeads } from './campaign-leads'
 import { CampaignSettings } from './campaign-settings'
+import { CampaignLaunch } from './campaign-launch'
 import { CampaignAnalytics } from './campaign-analytics'
 import type { CampaignStats } from '@/lib/campaigns'
 
@@ -34,7 +32,7 @@ interface CampaignData {
   status: 'draft' | 'active' | 'paused' | 'completed' | 'archived'
   type: string
   settings: Record<string, unknown>
-  stats: CampaignStats
+  stats: CampaignStats | null
   leadListIds: string[]
   mailboxIds: string[]
   createdAt: string
@@ -46,65 +44,36 @@ interface CampaignData {
 
 export default function CampaignDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const campaignId = params.id as string
 
   const [campaign, setCampaign] = useState<CampaignData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('sequence')
-  const [updating, setUpdating] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const requests = useRef(0)
 
-  useEffect(() => {
-    if (campaignId) {
-      fetchCampaign()
-    }
-  }, [campaignId])
-
-  async function fetchCampaign() {
-    setLoading(true)
+  const fetchCampaign = useCallback(async (signal?: AbortSignal) => {
+    const request = ++requests.current
+    setLoading(true); setLoadError(null)
     try {
-      const response = await fetch(`/api/campaigns/${campaignId}`)
-      if (response.ok) {
-        const data = await response.json()
+      const response = await fetch(`/api/campaigns/${campaignId}`, { signal, cache: 'no-store' })
+      if (signal?.aborted || request !== requests.current) return
+      if (response.status === 404) { setCampaign(null); return }
+      if (!response.ok) throw new Error('Campaign could not be verified. Retry the read.')
+      const data = await response.json()
+      if (!signal?.aborted && request === requests.current) {
+        if (!data.campaign) throw new Error('Campaign observation is unavailable.')
         setCampaign(data.campaign)
-      } else if (response.status === 404) {
-        toast.error('Campaign not found')
-        router.push('/campaigns')
-      } else {
-        toast.error('Failed to load campaign')
       }
-    } catch (error) {
-      console.error('Failed to fetch campaign:', error)
-      toast.error('Failed to load campaign')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function updateCampaignStatus(status: string) {
-    setUpdating(true)
-    try {
-      const response = await fetch(`/api/campaigns/${campaignId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: status === 'active' ? 'start' : 'pause' }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setCampaign(prev => prev ? { ...prev, status: data.campaign.status } : null)
-        toast.success(`Campaign ${status === 'active' ? 'started' : 'paused'}`)
-      } else {
-        const error = await response.json()
-        toast.error(error.error?.message || 'Failed to update campaign')
-      }
-    } catch (error) {
-      console.error('Failed to update campaign status:', error)
-      toast.error('Failed to update campaign')
-    } finally {
-      setUpdating(false)
-    }
-  }
+    } catch (failure) {
+      if (!signal?.aborted && request === requests.current) setLoadError(failure instanceof Error ? failure.message : 'Campaign could not be verified.')
+    } finally { if (!signal?.aborted && request === requests.current) setLoading(false) }
+  }, [campaignId])
+  useEffect(() => {
+    const controller = new AbortController()
+    if (campaignId) void fetchCampaign(controller.signal)
+    return () => controller.abort()
+  }, [campaignId, fetchCampaign])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -131,6 +100,8 @@ export default function CampaignDetailPage() {
     return <CampaignDetailSkeleton />
   }
 
+  if (loadError) return <Card><CardHeader><CardTitle>Campaign unavailable</CardTitle></CardHeader><CardContent className="space-y-3"><p role="alert">{loadError}</p><Button onClick={() => void fetchCampaign()}>Retry campaign read</Button></CardContent></Card>
+
   if (!campaign) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -144,23 +115,12 @@ export default function CampaignDetailPage() {
     )
   }
 
-  const stats = campaign.stats || {
-    totalLeads: 0,
-    contacted: 0,
-    opened: 0,
-    clicked: 0,
-    replied: 0,
-    bounced: 0,
-    openRate: 0,
-    clickRate: 0,
-    replyRate: 0,
-    bounceRate: 0
-  }
+  const stats = campaign.stats
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/campaigns">
@@ -170,7 +130,7 @@ export default function CampaignDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${getStatusColor(campaign.status)}`} />
-              <h1 className="text-2xl font-bold tracking-tight">{campaign.name}</h1>
+              <h1 className="text-2xl font-bold tracking-tight break-words">{campaign.name}</h1>
               <Badge variant={getStatusBadgeVariant(campaign.status)}>
                 {campaign.status}
               </Badge>
@@ -181,30 +141,11 @@ export default function CampaignDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {campaign.status === 'active' ? (
-            <Button
-              variant="outline"
-              onClick={() => updateCampaignStatus('paused')}
-              disabled={updating}
-            >
-              <Pause className="mr-2 h-4 w-4" />
-              Pause Campaign
-            </Button>
-          ) : campaign.status !== 'completed' && campaign.status !== 'archived' ? (
-            <Button
-              onClick={() => updateCampaignStatus('active')}
-              disabled={updating}
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Start Campaign
-            </Button>
-          ) : null}
-        </div>
+        <Button onClick={() => setActiveTab('launch')}>Open launch controls</Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-5">
+      {stats ? <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
@@ -271,9 +212,12 @@ export default function CampaignDetailPage() {
         </Card>
       </div>
 
+      : <p role="status">Delivery metrics are unknown until provider receipts are available.</p>}
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value="launch">Launch</TabsTrigger>
           <TabsTrigger value="sequence" className="gap-2">
             <Layers className="h-4 w-4" />
             Sequence
@@ -292,27 +236,32 @@ export default function CampaignDetailPage() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="launch"><CampaignLaunch campaignId={campaignId} status={campaign.status} mailboxIds={campaign.mailboxIds} onStatusChanged={() => void fetchCampaign()} onNavigate={setActiveTab} /></TabsContent>
+
         <TabsContent value="sequence" className="space-y-4">
           <SequenceEditor
             campaignId={campaignId}
             isEditable={campaign.status === 'draft' || campaign.status === 'paused'}
+            onUpdated={updatedAt => setCampaign(previous => previous ? { ...previous, updatedAt } : null)}
           />
         </TabsContent>
 
         <TabsContent value="leads" className="space-y-4">
-          <CampaignLeads campaignId={campaignId} />
+          <CampaignLeads campaignId={campaignId} onUpdated={updatedAt => setCampaign(previous => previous ? { ...previous, updatedAt } : null)} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
           <CampaignSettings
             campaignId={campaignId}
             settings={campaign.settings}
-            onUpdate={(settings) => setCampaign(prev => prev ? { ...prev, settings } : null)}
+            expectedUpdatedAt={campaign.updatedAt}
+            mailboxIds={campaign.mailboxIds}
+            onUpdate={(settings, updatedAt, mailboxIds) => setCampaign(prev => prev ? { ...prev, settings, updatedAt, mailboxIds } : null)}
           />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <CampaignAnalytics campaignId={campaignId} stats={stats} />
+          {stats ? <CampaignAnalytics campaignId={campaignId} stats={stats} /> : <p>Campaign delivery metrics are unknown.</p>}
         </TabsContent>
       </Tabs>
     </div>

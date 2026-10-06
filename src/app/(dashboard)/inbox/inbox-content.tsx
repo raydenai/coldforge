@@ -32,6 +32,7 @@ import {
   Linkedin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MessageBody } from '@/components/inbox/message-body'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -936,12 +937,8 @@ export default function InboxContent() {
                           </span>
                         </div>
                       </div>
-                      <div className="mt-3 text-sm whitespace-pre-wrap">
-                        {message.bodyHtml ? (
-                          <div dangerouslySetInnerHTML={{ __html: message.bodyHtml }} />
-                        ) : (
-                          message.bodyText
-                        )}
+                      <div className="mt-3 text-sm">
+                        <MessageBody bodyText={message.bodyText} bodyHtml={message.bodyHtml} />
                       </div>
                     </div>
                   ))}
@@ -968,12 +965,13 @@ export default function InboxContent() {
                       ref={replyTextareaRef}
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
-                      placeholder="Write your reply..."
+                      disabled
+                      placeholder="Reply sending is not configured"
                       className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-muted-foreground">
-                        Press <kbd className="px-1 rounded bg-muted">Cmd+Enter</kbd> to send
+                        Email sending is unavailable until the durable Winnr transport is configured.
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -986,7 +984,7 @@ export default function InboxContent() {
                         <Button
                           size="sm"
                           onClick={handleSendReply}
-                          disabled={!replyMessage.trim() || sendingReply}
+                          disabled title="Email sending is unavailable until the durable Winnr transport is configured"
                         >
                           {sendingReply ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />

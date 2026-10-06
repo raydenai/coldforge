@@ -1,12 +1,34 @@
 # ADR-007: Campaign Execution — Native Engine vs Vendor Sender
 
-**Status:** Proposed — requires owner decision
+**Status:** Provider decision resolved by owner on 2026-10-05; implementation and release gates remain open
 **Date:** 2026-08-24
 **Supersedes:** the DECISION-LOG row of 2026-08-22, "Build the native Upmax
 sequencer; keep Smartlead as parity/fallback", which recorded the decision but
 did not satisfy the constitutional test below.
 
 ## Why this ADR exists
+
+### 2026-10-05 decision and current scope
+
+The owner explicitly selected "full with Winnr" after considering a vendor
+sender alternative. Release A uses Winnr for mailbox infrastructure, DNS,
+provider warming and inbox access. ColdForge retains campaign policy and
+sequencing. Smartlead/Instantly are not the selected launch path. Winnr warming
+replaces the unfinished local warm-up engines; ColdForge does not rebuild a
+warm-up peer network.
+
+The public Winnr OpenAPI contract was retrieved on 2026-10-05. Its REST send
+request has no arbitrary-header or idempotency field. Campaign sending therefore
+still needs the Winnr SMTP contract, a durable send ledger, suppression checks,
+and confirmed receipts before sequence advancement. The choice of provider is
+not evidence that those requirements are implemented or deployed.
+
+New Winnr integration code uses the verified live `organizations`/`users`
+identity. The older proposal to convert the app to workspaces is deferred;
+inventing missing live tables is not a launch fix. See
+[the launch plan](../superpowers/plans/2026-10-05-winnr-launch.md) and
+[the current audit](../LAUNCH-AUDIT-2026-10-05.md). The alternatives and estimates
+below are the historical August analysis, not current measurements.
 
 `CLAUDE.md:18`:
 

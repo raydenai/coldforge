@@ -81,7 +81,7 @@ type CanonicalEvent<T> = {
   id: string
   type: string
   version: number
-  tenantId: string
+  organizationId: string
   occurredAt: string
   receivedAt: string
   source: 'upmax' | 'winnr' | 'ghl' | 'closebot' | 'retell' | 'apollo' | 'zerobounce'
@@ -93,7 +93,7 @@ type CanonicalEvent<T> = {
 }
 ```
 
-Uniqueness is enforced on `(tenant_id, source, source_event_id)`. Effects are emitted through a transactional outbox. Consumers store idempotency receipts.
+Uniqueness is enforced on `(organization_id, source, source_event_id)`. Effects are emitted through a transactional outbox. Consumers store idempotency receipts. The executable version-1 contract is defined in `src/lib/outreach/events.ts`; this sketch describes the product flow.
 
 ## Policy decisions
 
@@ -107,4 +107,4 @@ Uniqueness is enforced on `(tenant_id, source, source_event_id)`. Effects are em
 
 Each provider implements a stable port, for example `EmailInfrastructureProvider`, `CrmProvider`, `ConversationAgentProvider`, `VoiceProvider`, `LeadDataProvider`, and `EmailValidationProvider`. Store provider IDs only in mapping tables. No domain object imports a vendor SDK type.
 
-Smartlead can implement `CampaignExecutionProvider` as a temporary fallback or parity harness, but the primary production path is the native Upmax campaign engine over Winnr.
+The current email execution path is the native Upmax campaign engine over Winnr. Other campaign products are comparison references, not configured fallback transports.

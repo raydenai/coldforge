@@ -47,25 +47,10 @@ const pageTitles: Record<string, { title: string; description: string }> = {
     title: 'Leads',
     description: 'Your prospects and contact lists',
   },
-  '/accounts': {
-    title: 'Email Accounts',
-    description: 'Connected email accounts for sending',
-  },
-  '/domains': {
-    title: 'Domains',
-    description: 'Domain settings and DNS configuration',
-  },
-  '/warmup': {
-    title: 'Warmup',
-    description: 'Email account warmup status',
-  },
+  '/winnr': { title: 'Winnr', description: 'Mailbox connections, warming, and provider status' },
   '/inbox': {
     title: 'Inbox',
     description: 'Unified inbox for all replies',
-  },
-  '/analytics': {
-    title: 'Analytics',
-    description: 'Campaign performance and insights',
   },
   '/settings': {
     title: 'Settings',
@@ -74,9 +59,9 @@ const pageTitles: Record<string, { title: string; description: string }> = {
 }
 
 const quickActions = [
-  { label: 'Create Campaign', icon: Plus, href: '/campaigns/new' },
+  { label: 'Create Campaign', icon: Plus, href: '/campaigns' },
   { label: 'Import Leads', icon: Plus, href: '/leads?import=true' },
-  { label: 'Add Account', icon: Plus, href: '/accounts?add=true' },
+  { label: 'Open Winnr', icon: Plus, href: '/winnr' },
 ]
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {

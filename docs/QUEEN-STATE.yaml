@@ -1,158 +1,66 @@
 project: upmax-ai-outreach
-release_target: release-a
-phase: foundation
+release_target: email-first-outreach
+phase: final_integration
 status: in_progress
-updated_at: 2026-08-23
-
+updated_at: 2026-10-06
 mission: >-
-  Replace Mailscale and Instantly with a safe native Upmax campaign engine over
-  Winnr, then convert qualified replies into GHL appointments through CloseBot.
+  Operable cold email over Winnr with durable campaigns, an operator inbox,
+  approved copy and conversation agents, qualification, booking and callbacks.
+  Later social and LinkedIn adapters reuse the same lead and event contracts.
+repository: https://github.com/raydenai/coldforge
+branch: fix/mail-launch-readiness
+recovered_head: d391831352a27239a58c824e084047260fc02d94
+worktree: /Users/sezars/projects/coldforge/.claude/worktrees/launch-readiness-20261005
+historical_baseline: docs/BASELINE-FND-001.md
+plan: docs/superpowers/plans/2026-10-05-complete-outreach.md
+migration_runbook: docs/OUTREACH-MIGRATION-RUNBOOK.md
 
-verified_baseline:
-  repository: https://github.com/raydenai/coldforge
-  commit: 79801a0
-  branch: docs/upmax-queen-production-roadmap
-  commit_claim: "docs: add Upmax Queen production execution system"
-  evidence: docs/BASELINE-FND-001.md
-  tests: "312 passed, 9 failed, 321 total"
-  lint: "38 errors, 172 warnings"
-  typecheck: "crashes: RangeError Map maximum size exceeded"
-  build: "blocked by typecheck crash"
-  integration_tests: "in-memory mock; no real Supabase/Redis/provider path"
-  ci: "no workflows found"
-  node: "unpinned; local v22.23.1, Dockerfile node:20-alpine, target 24 LTS"
+local_evidence:
+  modules_020_through_036: independently_reviewed
+  strict_typecheck: passed
+  production_build: passed
+  lint: "0 errors,25 warnings"
+  unit_tests: "970 tests,90 files"
+  integration_tests: "325 tests,19 files"
+  required_postgres: "All16 suites;no skipped assertions"
+  operator_ui: "Independent closure accepted;15 focused lead/CSV checks pass"
+  pipeline_ui: "15 browser checks;desktop1440/mobile390;no errors or overflow"
+  mail_loop: "Four local TLS/Nodemailer+PostgreSQL scenarios included in full run"
+  auth_startup: "Independent review accepted;42 focused plus7 independent checks"
+  downstream_033: "Reviewed grants,current qualification and full CRM flow;114 focused checks"
+  private_backup_restore: >-
+    Public schema/data restored to isolated PostgreSQL17.9.
+    All14 original tables and4 existing rows preserved through020-033.
+    Managed auth dependencies use primary keys only;no full auth restore claimed.
+  live_runtime_metadata: "PostgreSQL17.6;extensions namespace;builtin SHA256 verified"
 
-current_state:
-  tests: "360 passed, 0 failed"
-  lint: "0 errors, 170 warnings"
-  typecheck: "still crashes; 1156 further type errors sit behind the crash"
-  build: "still blocked by typecheck"
-  ci: ".github/workflows/ci.yml added; quality job green, typecheck/build job known-red"
+live_state:
+  production_migrations_020_plus: not_applied
+  hosting_project: coldforge_in_existing_vercel_pro_team
+  hosting_framework: Next.js_on_Node24
+  production_environment: configured
+  auth_confirmation_origin: https://coldforge-wheat.vercel.app
+  auth_confirmation_required: true
+  deployment: not_created
+  winnr_token: saved_in_macos_keychain
+  winnr_readonly_probe: "valid read/write key;0 domains;0 mailboxes;0 warming accounts"
+  app_provider_connection: not_configured
+  live_email_delivery: unverified
+  live_booking_voice: unverified
+  provider_mutations_or_purchases: none
+  outbound_messages_or_calls: none
 
-completed:
-  - id: FND-001
-    summary: "Baseline reproduced and documented"
-    evidence: docs/BASELINE-FND-001.md
-  - id: FND-002
-    summary: "9 error-contract test failures fixed; implementation made canonical"
-    evidence: "tests/unit/lib/errors.test.ts 36 passed; NotFoundError default resource and ExternalServiceError Error-cause defects fixed"
-  - id: FND-003
-    summary: "All 38 lint errors resolved without weakening rules"
-    evidence: "npx eslint -> 0 errors, 171 warnings; tsc error count unchanged at 1156 (no regressions introduced)"
-  - id: FND-006
-    summary: "Complete env schema and startup validation"
-    evidence: "src/lib/env.ts, src/instrumentation.ts, docs/ENVIRONMENT.md, tests/unit/lib/env.test.ts 15 passed"
-  - id: FND-008
-    summary: "Quality scripts and GitHub CI added"
-    evidence: "package.json: typecheck, lint:strict, test:unit, test:integration, check; .github/workflows/ci.yml"
-  - id: SEC-002
-    summary: "Webhook verification now fails closed on absent secrets"
-    evidence: "src/lib/webhooks/verification.ts; 4 routes migrated; tests/unit/lib/webhook-verification.test.ts 20 passed"
-    defects_fixed:
-      - "email-events: `requireVerification && webhookSecret` skipped verification entirely when EMAIL_WEBHOOK_SECRET was unset, including in production. Endpoint suppresses leads and mutates campaign stats."
-      - "postmark: `if (POSTMARK_WEBHOOK_TOKEN)` left the endpoint fully unauthenticated in every environment when the token was unset."
-      - "webhooks.ts verifyWebhookSignature('ses', ...) returned true unconditionally; now throws. No current caller passes 'ses'."
-      - "SNS SigningCertURL and SubscribeURL accepted any *.amazonaws.com host (e.g. an S3 bucket), enabling SSRF and signature bypass. Now requires sns.<region>.amazonaws.com over https."
-      - "sendgrid: outside production a FAILED signature was logged and the request processed anyway."
-      - "email-events: x-webhook-timestamp is now required; previously a timestamp-less signed payload could be replayed indefinitely."
-    breaking_change: >-
-      /api/webhooks/email-events now requires the x-webhook-timestamp header and
-      returns 503 when EMAIL_WEBHOOK_SECRET is unset. Internal senders that
-      omitted the header must be updated. Any provider whose secret is not
-      configured will now receive 503 instead of being silently accepted.
+remaining:
+  - Land through a PR with remote CI evidence.
+  - Apply reviewed additive migrations and deploy the landed source.
+  - Configure sender domains/mailboxes and actual provider accounts.
+  - Run a controlled pilot with selected recipients and verified receipts.
 
-partially_completed:
-  - id: FND-013
-    summary: "Node 24 LTS pinned in .nvmrc, package.json engines, Dockerfile, CI"
-    remaining: "Compatibility not verified locally (no Node 24 available on this machine). CI on Node 24 is the first real verification."
-    note: "Also fixed a Dockerfile defect: deps stage ran `npm ci --only=production`, so the builder stage could never run `next build`."
+operator_inputs:
+  - Sending domain and mailbox quantity are not yet selected.
+  - No real campaign audience/test recipient has been supplied.
+  - No app model,CRM,CloseBot,Retell or validation credential has been verified.
 
-blocked:
-  - id: FND-004
-    summary: "Typecheck crash and 1156 type errors"
-    root_cause: >-
-      src/lib/billing/invoices.ts queries `invoices` and `invoice_line_items`,
-      which are absent from the generated src/types/database.ts. Every
-      from('invoices') resolves to the `relation: never` overload and the
-      resulting builder type exceeds V8's Map limit.
-    blocked_on: live-schema-access
-  - id: FND-005
-    summary: "Clean Next.js build"
-    blocked_on: FND-004
-  - id: FND-009
-    summary: "Real Supabase/Redis/mail-sink test harness"
-    blocked_on: migrations-do-not-apply
-  - id: FND-011
-    summary: "Migration validate/reset/backup/restore workflows"
-    blocked_on: migrations-do-not-apply
-
-decisions_made:
-  - date: 2026-08-23
-    decision: "Release A standardizes on workspaces / workspace_members tenancy."
-    rationale: "87 of 104 tenancy call sites already use it and it is the newer direction."
-    consequence: "Author DDL for the undeclared tables, migrate the 17 organizations call sites, add RLS and negative authorization tests (SEC-008). Needs an ADR."
-  - date: 2026-08-23
-    decision: "The live Supabase database is the schema source of truth."
-    rationale: "Owner confirmed a live database with real data exists."
-    consequence: "Migrations and generated types are reconciled to the live schema, not the reverse. Blocked pending credentials."
-
-decisions_needed:
-  - id: live-schema-access
-    gate: "OAuth/API credentials (AUTONOMY-RUNBOOK)"
-    need: "Supabase project ref and a read-capable connection string or access token."
-    purpose: "Dump the live schema, make it the baseline, reconcile migrations and regenerate src/types/database.ts."
-    unblocks: [FND-004, FND-005, FND-009, FND-011, SEC-008]
-    note: >-
-      .env.production.template referenced project ref `diqrtuvibinytpvhllzv`.
-      Unverified — confirm before use.
-
-risks:
-  - id: schema-truth
-    severity: critical
-    detail: >-
-      11 tables the application queries 234 times have no DDL anywhere in the
-      repository (workspace_members 75, profiles 57, mailboxes 33, email_jobs 21,
-      workspaces 12, organization_members 6, lead_tags 5, inbox_messages 4,
-      subscriptions 4, sync_states 4, credit_packages 3). A clean checkout
-      provisioned from supabase/migrations/ cannot run the application.
-  - id: migrations-do-not-apply
-    severity: critical
-    detail: >-
-      `supabase start` fails at 007_warmup_pool.sql: warmup_emails is created by
-      both 001 and 007, and warmup_schedules by both 007 and 010. The migration
-      set has never been applied as a set.
-  - id: tenancy-split
-    severity: high
-    detail: >-
-      warmup/* routes authorize against organization_members while
-      reputation/*, integrations/*, smtp-providers/*, email-queue and
-      oauth/authorize authorize against workspace_members. Tenant isolation is
-      inconsistent across the API surface.
-  - id: webhooks-fail-open
-    severity: resolved
-    detail: >-
-      Resolved by SEC-002. Verification is now unconditional and an absent secret
-      returns 503 instead of skipping the check. Deployments must set a secret
-      for every provider they actually receive webhooks from, or those endpoints
-      will return 503.
-  - id: encryption-salt-fallback
-    severity: high
-    detail: >-
-      src/lib/encryption.ts:15 falls back to the literal
-      'instantscale-default-salt'. Startup validation now requires ENCRYPTION_SALT
-      in production, but the fallback itself remains in the code (FND-012).
-
-release_gates:
-  foundation: in_progress
-  event_spine: blocked
-  staging_email_loop: blocked
-  reply_to_booking: blocked
-  security: blocked
-  pilot: blocked
-
-last_integrated_commit: null
-next_action: >-
-  FND-012: remove the encryption salt fallback in src/lib/encryption.ts:15.
-  Then SEC-003 (event deduplication) — SEC-002 added replay protection to
-  email-events but there is still no dedupe ledger. FND-004/005/009/011 resume
-  once live schema access is provided.
+authority: >-
+  Owner selected Winnr and appointed the driver product manager with autonomous
+  implementation authority. No arbitrary recipients, calls or purchases are inferred.

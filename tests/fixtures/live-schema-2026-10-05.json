@@ -1,0 +1,2413 @@
+{
+  "columns": [
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "campaign_leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "campaign_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "campaign_leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "lead_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "campaign_leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "0",
+      "column_name": "current_step",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "campaign_leads",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "'pending'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "campaign_leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "last_sent_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "campaign_leads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "next_send_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "campaign_leads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "campaign_leads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "campaign_sequences",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "campaign_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "campaign_sequences",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "step_number",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "campaign_sequences",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 4,
+      "table_name": "campaign_sequences",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_html",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 5,
+      "table_name": "campaign_sequences",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_text",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "campaign_sequences",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "1",
+      "column_name": "delay_days",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "campaign_sequences",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "0",
+      "column_name": "delay_hours",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "campaign_sequences",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "'always'::text",
+      "column_name": "condition_type",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "campaign_sequences",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "campaign_sequences",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "campaign_sequences",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "campaigns",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "campaigns",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "campaigns",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'draft'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "campaigns",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'{\"timezone\": \"America/New_York\", \"send_days\": [\"mon\", \"tue\", \"wed\", \"thu\", \"fri\"], \"daily_limit\": 100, \"send_hours_end\": 17, \"send_hours_start\": 9, \"max_delay_minutes\": 180, \"min_delay_minutes\": 60}'::jsonb",
+      "column_name": "settings",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "campaigns",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "'{\"sent\": 0, \"opened\": 0, \"bounced\": 0, \"clicked\": 0, \"replied\": 0}'::jsonb",
+      "column_name": "stats",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "campaigns",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "campaigns",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "campaigns",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "domains",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "domains",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "domain",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "registrar",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "registrar_domain_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'cloudflare'::text",
+      "column_name": "dns_provider",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "dns_zone_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "spf_configured",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "domains",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "false",
+      "column_name": "dkim_configured",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "domains",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": null,
+      "column_name": "dkim_selector",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "dkim_private_key_encrypted",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "dmarc_configured",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "domains",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "false",
+      "column_name": "bimi_configured",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "domains",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "'pending'::text",
+      "column_name": "health_status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "domains",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "last_health_check",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "domains",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "false",
+      "column_name": "auto_purchased",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "domains",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": null,
+      "column_name": "purchase_price",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "ordinal_position": 17,
+      "table_name": "domains",
+      "udt_name": "numeric"
+    },
+    {
+      "column_default": null,
+      "column_name": "expires_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 18,
+      "table_name": "domains",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 19,
+      "table_name": "domains",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 20,
+      "table_name": "domains",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "email_accounts",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "email_accounts",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "display_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "provider",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 5,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'active'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "smtp_host",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "smtp_port",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": null,
+      "column_name": "smtp_username",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "smtp_password_encrypted",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "imap_host",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "imap_port",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": null,
+      "column_name": "oauth_tokens_encrypted",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "email_accounts",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "50",
+      "column_name": "daily_limit",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "0",
+      "column_name": "sent_today",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "false",
+      "column_name": "warmup_enabled",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "email_accounts",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "0",
+      "column_name": "warmup_progress",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 17,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "100",
+      "column_name": "health_score",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 18,
+      "table_name": "email_accounts",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": null,
+      "column_name": "last_error",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 19,
+      "table_name": "email_accounts",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 20,
+      "table_name": "email_accounts",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 21,
+      "table_name": "email_accounts",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "lead_lists",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "lead_lists",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "lead_lists",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "lead_lists",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "0",
+      "column_name": "lead_count",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "lead_lists",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "lead_lists",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "lead_lists",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "list_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "leads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 4,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "first_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "last_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "company",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "title",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "phone",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "linkedin_url",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'{}'::jsonb",
+      "column_name": "custom_fields",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "leads",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "'active'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "validation_status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "leads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "leads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "leads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "organizations",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 2,
+      "table_name": "organizations",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "slug",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "organizations",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'starter'::text",
+      "column_name": "plan",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "organizations",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "stripe_customer_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "organizations",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "stripe_subscription_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "organizations",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'{}'::jsonb",
+      "column_name": "settings",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "organizations",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "organizations",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "organizations",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "sent_email_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "email_account_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "lead_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 6,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "to_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 7,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_html",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_text",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "message_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "in_reply_to",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'uncategorized'::text",
+      "column_name": "category",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "is_read",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "replies",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "received_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "replies",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "replies",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "thread_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 17,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "sentiment",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 18,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "confidence",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "ordinal_position": 19,
+      "table_name": "replies",
+      "udt_name": "numeric"
+    },
+    {
+      "column_default": "'received'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 20,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "mailbox_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 21,
+      "table_name": "replies",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 22,
+      "table_name": "replies",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "is_auto_detected",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 23,
+      "table_name": "replies",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": null,
+      "column_name": "snoozed_until",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 24,
+      "table_name": "replies",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "campaign_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "campaign_lead_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "email_account_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "lead_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "sent_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "to_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 7,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 8,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 9,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_html",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_text",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "message_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'sent'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "opened_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "clicked_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "replied_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "bounced_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 17,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "bounce_type",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 18,
+      "table_name": "sent_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "sent_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 19,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 20,
+      "table_name": "sent_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "thread_messages",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "thread_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 2,
+      "table_name": "thread_messages",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "message_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "in_reply_to",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'inbound'::text",
+      "column_name": "direction",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 5,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 6,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "to_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 8,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_text",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "body_html",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "snippet",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "thread_messages",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "has_attachments",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "thread_messages",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "sent_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "ordinal_position": 14,
+      "table_name": "thread_messages",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "received_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "thread_messages",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "thread_messages",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 2,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "mailbox_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "campaign_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "lead_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "thread_external_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 7,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "participant_email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 8,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "participant_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "1",
+      "column_name": "message_count",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "ordinal_position": 10,
+      "table_name": "threads",
+      "udt_name": "int4"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "last_message_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 11,
+      "table_name": "threads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "first_message_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 12,
+      "table_name": "threads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "'active'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 13,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "false",
+      "column_name": "is_read",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "ordinal_position": 14,
+      "table_name": "threads",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "'uncategorized'::text",
+      "column_name": "category",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 15,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "sentiment",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 16,
+      "table_name": "threads",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "assigned_to",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 17,
+      "table_name": "threads",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 18,
+      "table_name": "threads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 19,
+      "table_name": "threads",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "users",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "organization_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "users",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "email",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "ordinal_position": 3,
+      "table_name": "users",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "full_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "users",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'member'::text",
+      "column_name": "role",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "users",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "avatar_url",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "users",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'{}'::jsonb",
+      "column_name": "settings",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "users",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "users",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "users",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "uuid_generate_v4()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "ordinal_position": 1,
+      "table_name": "warmup_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "from_account_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 2,
+      "table_name": "warmup_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "to_account_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "ordinal_position": 3,
+      "table_name": "warmup_emails",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "message_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 4,
+      "table_name": "warmup_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "subject",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 5,
+      "table_name": "warmup_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'sent'::text",
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "ordinal_position": 6,
+      "table_name": "warmup_emails",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "sent_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 7,
+      "table_name": "warmup_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "opened_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 8,
+      "table_name": "warmup_emails",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "replied_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "ordinal_position": 9,
+      "table_name": "warmup_emails",
+      "udt_name": "timestamptz"
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "campaign_leads_campaign_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE",
+      "table_name": "campaign_leads"
+    },
+    {
+      "conname": "campaign_leads_campaign_id_lead_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (campaign_id, lead_id)",
+      "table_name": "campaign_leads"
+    },
+    {
+      "conname": "campaign_leads_lead_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE",
+      "table_name": "campaign_leads"
+    },
+    {
+      "conname": "campaign_leads_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "campaign_leads"
+    },
+    {
+      "conname": "campaign_leads_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'in_progress'::text, 'completed'::text, 'replied'::text, 'bounced'::text, 'unsubscribed'::text])))",
+      "table_name": "campaign_leads"
+    },
+    {
+      "conname": "campaign_sequences_campaign_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE",
+      "table_name": "campaign_sequences"
+    },
+    {
+      "conname": "campaign_sequences_condition_type_check",
+      "contype": "c",
+      "definition": "CHECK ((condition_type = ANY (ARRAY['always'::text, 'not_opened'::text, 'not_replied'::text, 'not_clicked'::text])))",
+      "table_name": "campaign_sequences"
+    },
+    {
+      "conname": "campaign_sequences_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "campaign_sequences"
+    },
+    {
+      "conname": "campaigns_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "campaigns"
+    },
+    {
+      "conname": "campaigns_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "campaigns"
+    },
+    {
+      "conname": "campaigns_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'paused'::text, 'completed'::text, 'archived'::text])))",
+      "table_name": "campaigns"
+    },
+    {
+      "conname": "domains_health_status_check",
+      "contype": "c",
+      "definition": "CHECK ((health_status = ANY (ARRAY['healthy'::text, 'warning'::text, 'error'::text, 'pending'::text])))",
+      "table_name": "domains"
+    },
+    {
+      "conname": "domains_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "domains"
+    },
+    {
+      "conname": "domains_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "domains"
+    },
+    {
+      "conname": "domains_registrar_check",
+      "contype": "c",
+      "definition": "CHECK ((registrar = ANY (ARRAY['cloudflare'::text, 'namecheap'::text, 'porkbun'::text, 'manual'::text])))",
+      "table_name": "domains"
+    },
+    {
+      "conname": "email_accounts_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "email_accounts"
+    },
+    {
+      "conname": "email_accounts_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "email_accounts"
+    },
+    {
+      "conname": "email_accounts_provider_check",
+      "contype": "c",
+      "definition": "CHECK ((provider = ANY (ARRAY['google'::text, 'microsoft'::text, 'smtp'::text])))",
+      "table_name": "email_accounts"
+    },
+    {
+      "conname": "email_accounts_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'error'::text, 'warming'::text])))",
+      "table_name": "email_accounts"
+    },
+    {
+      "conname": "lead_lists_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "lead_lists"
+    },
+    {
+      "conname": "lead_lists_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "lead_lists"
+    },
+    {
+      "conname": "leads_list_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (list_id) REFERENCES lead_lists(id) ON DELETE SET NULL",
+      "table_name": "leads"
+    },
+    {
+      "conname": "leads_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "leads"
+    },
+    {
+      "conname": "leads_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "leads"
+    },
+    {
+      "conname": "leads_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'unsubscribed'::text, 'bounced'::text, 'complained'::text])))",
+      "table_name": "leads"
+    },
+    {
+      "conname": "leads_validation_status_check",
+      "contype": "c",
+      "definition": "CHECK ((validation_status = ANY (ARRAY['valid'::text, 'invalid'::text, 'risky'::text, 'unknown'::text])))",
+      "table_name": "leads"
+    },
+    {
+      "conname": "organizations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "organizations"
+    },
+    {
+      "conname": "organizations_plan_check",
+      "contype": "c",
+      "definition": "CHECK ((plan = ANY (ARRAY['starter'::text, 'pro'::text, 'agency'::text])))",
+      "table_name": "organizations"
+    },
+    {
+      "conname": "organizations_slug_key",
+      "contype": "u",
+      "definition": "UNIQUE (slug)",
+      "table_name": "organizations"
+    },
+    {
+      "conname": "replies_category_check",
+      "contype": "c",
+      "definition": "CHECK ((category = ANY (ARRAY['interested'::text, 'not_interested'::text, 'out_of_office'::text, 'unsubscribe'::text, 'uncategorized'::text])))",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_email_account_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (email_account_id) REFERENCES email_accounts(id) ON DELETE SET NULL",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_lead_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_mailbox_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (mailbox_id) REFERENCES email_accounts(id) ON DELETE SET NULL",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_sent_email_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (sent_email_id) REFERENCES sent_emails(id) ON DELETE SET NULL",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_sentiment_check",
+      "contype": "c",
+      "definition": "CHECK ((sentiment = ANY (ARRAY['positive'::text, 'neutral'::text, 'negative'::text])))",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['received'::text, 'unread'::text, 'read'::text, 'replied'::text, 'archived'::text, 'snoozed'::text])))",
+      "table_name": "replies"
+    },
+    {
+      "conname": "replies_thread_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE",
+      "table_name": "replies"
+    },
+    {
+      "conname": "sent_emails_campaign_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_campaign_lead_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campaign_lead_id) REFERENCES campaign_leads(id) ON DELETE SET NULL",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_email_account_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (email_account_id) REFERENCES email_accounts(id) ON DELETE SET NULL",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_lead_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "sent_emails_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['sent'::text, 'delivered'::text, 'opened'::text, 'clicked'::text, 'replied'::text, 'bounced'::text, 'complained'::text])))",
+      "table_name": "sent_emails"
+    },
+    {
+      "conname": "thread_messages_direction_check",
+      "contype": "c",
+      "definition": "CHECK ((direction = ANY (ARRAY['inbound'::text, 'outbound'::text])))",
+      "table_name": "thread_messages"
+    },
+    {
+      "conname": "thread_messages_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "thread_messages"
+    },
+    {
+      "conname": "thread_messages_thread_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE",
+      "table_name": "thread_messages"
+    },
+    {
+      "conname": "threads_assigned_to_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_campaign_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_category_check",
+      "contype": "c",
+      "definition": "CHECK ((category = ANY (ARRAY['interested'::text, 'not_interested'::text, 'maybe'::text, 'out_of_office'::text, 'auto_reply'::text, 'bounced'::text, 'meeting_request'::text, 'uncategorized'::text])))",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_lead_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_mailbox_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (mailbox_id) REFERENCES email_accounts(id) ON DELETE CASCADE",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_sentiment_check",
+      "contype": "c",
+      "definition": "CHECK ((sentiment = ANY (ARRAY['positive'::text, 'neutral'::text, 'negative'::text])))",
+      "table_name": "threads"
+    },
+    {
+      "conname": "threads_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'resolved'::text, 'archived'::text, 'spam'::text])))",
+      "table_name": "threads"
+    },
+    {
+      "conname": "users_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "table_name": "users"
+    },
+    {
+      "conname": "users_organization_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE",
+      "table_name": "users"
+    },
+    {
+      "conname": "users_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "users"
+    },
+    {
+      "conname": "users_role_check",
+      "contype": "c",
+      "definition": "CHECK ((role = ANY (ARRAY['owner'::text, 'admin'::text, 'member'::text])))",
+      "table_name": "users"
+    },
+    {
+      "conname": "warmup_emails_from_account_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (from_account_id) REFERENCES email_accounts(id) ON DELETE CASCADE",
+      "table_name": "warmup_emails"
+    },
+    {
+      "conname": "warmup_emails_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)",
+      "table_name": "warmup_emails"
+    },
+    {
+      "conname": "warmup_emails_status_check",
+      "contype": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['sent'::text, 'delivered'::text, 'opened'::text, 'replied'::text])))",
+      "table_name": "warmup_emails"
+    },
+    {
+      "conname": "warmup_emails_to_account_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (to_account_id) REFERENCES email_accounts(id) ON DELETE CASCADE",
+      "table_name": "warmup_emails"
+    }
+  ],
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX campaign_leads_campaign_id_lead_id_key ON public.campaign_leads USING btree (campaign_id, lead_id)",
+      "indexname": "campaign_leads_campaign_id_lead_id_key",
+      "tablename": "campaign_leads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX campaign_leads_pkey ON public.campaign_leads USING btree (id)",
+      "indexname": "campaign_leads_pkey",
+      "tablename": "campaign_leads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_campaign_leads_campaign ON public.campaign_leads USING btree (campaign_id)",
+      "indexname": "idx_campaign_leads_campaign",
+      "tablename": "campaign_leads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_campaign_leads_lead ON public.campaign_leads USING btree (lead_id)",
+      "indexname": "idx_campaign_leads_lead",
+      "tablename": "campaign_leads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX campaign_sequences_pkey ON public.campaign_sequences USING btree (id)",
+      "indexname": "campaign_sequences_pkey",
+      "tablename": "campaign_sequences"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_campaign_sequences_campaign ON public.campaign_sequences USING btree (campaign_id)",
+      "indexname": "idx_campaign_sequences_campaign",
+      "tablename": "campaign_sequences"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)",
+      "indexname": "campaigns_pkey",
+      "tablename": "campaigns"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_campaigns_org ON public.campaigns USING btree (organization_id)",
+      "indexname": "idx_campaigns_org",
+      "tablename": "campaigns"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX domains_pkey ON public.domains USING btree (id)",
+      "indexname": "domains_pkey",
+      "tablename": "domains"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_domains_org ON public.domains USING btree (organization_id)",
+      "indexname": "idx_domains_org",
+      "tablename": "domains"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX email_accounts_pkey ON public.email_accounts USING btree (id)",
+      "indexname": "email_accounts_pkey",
+      "tablename": "email_accounts"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_email_accounts_org ON public.email_accounts USING btree (organization_id)",
+      "indexname": "idx_email_accounts_org",
+      "tablename": "email_accounts"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX lead_lists_pkey ON public.lead_lists USING btree (id)",
+      "indexname": "lead_lists_pkey",
+      "tablename": "lead_lists"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_leads_email ON public.leads USING btree (email)",
+      "indexname": "idx_leads_email",
+      "tablename": "leads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_leads_list ON public.leads USING btree (list_id)",
+      "indexname": "idx_leads_list",
+      "tablename": "leads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_leads_org ON public.leads USING btree (organization_id)",
+      "indexname": "idx_leads_org",
+      "tablename": "leads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX leads_pkey ON public.leads USING btree (id)",
+      "indexname": "leads_pkey",
+      "tablename": "leads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX organizations_pkey ON public.organizations USING btree (id)",
+      "indexname": "organizations_pkey",
+      "tablename": "organizations"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX organizations_slug_key ON public.organizations USING btree (slug)",
+      "indexname": "organizations_slug_key",
+      "tablename": "organizations"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_email_account ON public.replies USING btree (email_account_id)",
+      "indexname": "idx_replies_email_account",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_mailbox ON public.replies USING btree (mailbox_id) WHERE (mailbox_id IS NOT NULL)",
+      "indexname": "idx_replies_mailbox",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_org ON public.replies USING btree (organization_id)",
+      "indexname": "idx_replies_org",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_sentiment ON public.replies USING btree (sentiment) WHERE (sentiment IS NOT NULL)",
+      "indexname": "idx_replies_sentiment",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_snoozed ON public.replies USING btree (snoozed_until) WHERE (snoozed_until IS NOT NULL)",
+      "indexname": "idx_replies_snoozed",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_status ON public.replies USING btree (status)",
+      "indexname": "idx_replies_status",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_replies_thread ON public.replies USING btree (thread_id) WHERE (thread_id IS NOT NULL)",
+      "indexname": "idx_replies_thread",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX replies_pkey ON public.replies USING btree (id)",
+      "indexname": "replies_pkey",
+      "tablename": "replies"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_sent_emails_campaign ON public.sent_emails USING btree (campaign_id)",
+      "indexname": "idx_sent_emails_campaign",
+      "tablename": "sent_emails"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_sent_emails_org ON public.sent_emails USING btree (organization_id)",
+      "indexname": "idx_sent_emails_org",
+      "tablename": "sent_emails"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX sent_emails_pkey ON public.sent_emails USING btree (id)",
+      "indexname": "sent_emails_pkey",
+      "tablename": "sent_emails"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_thread_messages_direction ON public.thread_messages USING btree (thread_id, direction)",
+      "indexname": "idx_thread_messages_direction",
+      "tablename": "thread_messages"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_thread_messages_message_id ON public.thread_messages USING btree (message_id) WHERE (message_id IS NOT NULL)",
+      "indexname": "idx_thread_messages_message_id",
+      "tablename": "thread_messages"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_thread_messages_sent_at ON public.thread_messages USING btree (thread_id, sent_at DESC)",
+      "indexname": "idx_thread_messages_sent_at",
+      "tablename": "thread_messages"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_thread_messages_thread ON public.thread_messages USING btree (thread_id)",
+      "indexname": "idx_thread_messages_thread",
+      "tablename": "thread_messages"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX thread_messages_pkey ON public.thread_messages USING btree (id)",
+      "indexname": "thread_messages_pkey",
+      "tablename": "thread_messages"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_campaign ON public.threads USING btree (campaign_id) WHERE (campaign_id IS NOT NULL)",
+      "indexname": "idx_threads_campaign",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_category ON public.threads USING btree (organization_id, category)",
+      "indexname": "idx_threads_category",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_external_id ON public.threads USING btree (thread_external_id) WHERE (thread_external_id IS NOT NULL)",
+      "indexname": "idx_threads_external_id",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_last_message ON public.threads USING btree (organization_id, last_message_at DESC)",
+      "indexname": "idx_threads_last_message",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_lead ON public.threads USING btree (lead_id) WHERE (lead_id IS NOT NULL)",
+      "indexname": "idx_threads_lead",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_mailbox ON public.threads USING btree (mailbox_id)",
+      "indexname": "idx_threads_mailbox",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX idx_threads_mailbox_external_unique ON public.threads USING btree (mailbox_id, thread_external_id) WHERE (thread_external_id IS NOT NULL)",
+      "indexname": "idx_threads_mailbox_external_unique",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_organization ON public.threads USING btree (organization_id)",
+      "indexname": "idx_threads_organization",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_participant ON public.threads USING btree (participant_email)",
+      "indexname": "idx_threads_participant",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_status ON public.threads USING btree (organization_id, status)",
+      "indexname": "idx_threads_status",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE INDEX idx_threads_unread ON public.threads USING btree (organization_id, is_read) WHERE (is_read = false)",
+      "indexname": "idx_threads_unread",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX threads_pkey ON public.threads USING btree (id)",
+      "indexname": "threads_pkey",
+      "tablename": "threads"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)",
+      "indexname": "users_pkey",
+      "tablename": "users"
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX warmup_emails_pkey ON public.warmup_emails USING btree (id)",
+      "indexname": "warmup_emails_pkey",
+      "tablename": "warmup_emails"
+    }
+  ]
+}

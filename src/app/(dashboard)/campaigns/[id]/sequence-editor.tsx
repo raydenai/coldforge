@@ -85,6 +85,7 @@ import {
 interface SequenceEditorProps {
   campaignId: string
   isEditable: boolean
+  onUpdated?: (updatedAt: string) => void
 }
 
 type ConditionType = 'always' | 'not_opened' | 'not_replied' | 'not_clicked'
@@ -106,8 +107,9 @@ const CONDITION_OPTIONS = [
   { value: 'not_clicked', label: 'Not clicked', description: 'Only send if previous email links were not clicked' },
 ]
 
-export function SequenceEditor({ campaignId, isEditable }: SequenceEditorProps) {
+export function SequenceEditor({ campaignId, isEditable, onUpdated }: SequenceEditorProps) {
   const [steps, setSteps] = useState<Step[]>([])
+  const [expectedUpdatedAt, setExpectedUpdatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -155,6 +157,7 @@ export function SequenceEditor({ campaignId, isEditable }: SequenceEditorProps) 
       const response = await fetch(`/api/campaigns/${campaignId}/sequences`)
       if (response.ok) {
         const data = await response.json()
+        setExpectedUpdatedAt(data.expectedUpdatedAt ?? null)
         if (data.steps && data.steps.length > 0) {
           setSteps(data.steps.map((step: Step) => ({
             ...step,
@@ -369,10 +372,13 @@ export function SequenceEditor({ campaignId, isEditable }: SequenceEditorProps) 
       const response = await fetch(`/api/campaigns/${campaignId}/sequences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ steps }),
+        body: JSON.stringify({ steps, expectedUpdatedAt }),
       })
 
       if (response.ok) {
+        const data = await response.json()
+        setExpectedUpdatedAt(data.expectedUpdatedAt)
+        onUpdated?.(data.expectedUpdatedAt)
         setHasChanges(false)
         toast.success('Sequence saved successfully')
       } else {
@@ -481,7 +487,7 @@ export function SequenceEditor({ campaignId, isEditable }: SequenceEditorProps) 
               {editingStep ? `Edit Step ${editingStep.order}` : 'Add Step'}
             </DialogTitle>
             <DialogDescription>
-              Configure your email content, timing, and A/B test variants
+              Configure your email content and timing. One variant per step is supported.
             </DialogDescription>
           </DialogHeader>
 
@@ -567,9 +573,11 @@ export function SequenceEditor({ campaignId, isEditable }: SequenceEditorProps) 
                     variant="outline"
                     size="sm"
                     onClick={addVariant}
+                    disabled
+                    title="Multiple variants are not supported by the current sequence storage"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Variant
+                    Variants unavailable
                   </Button>
                 </div>
 

@@ -1,0 +1,9 @@
+// @vitest-environment node
+import {describe,it,expect} from 'vitest'
+import {createModelPort} from '@/lib/outreach/agents/model'
+describe('actual installed SDK full response boundary',()=>{
+ it('aborts and cancels a stalled body after headers, without retries',async()=>{let cancelled=false,signal:AbortSignal|null|undefined,calls=0;const fake:typeof fetch=async(_url,init)=>{calls++;signal=init?.signal;return new Response(new ReadableStream({cancel(){cancelled=true}}),{headers:{'content-type':'application/json'}})};const started=Date.now();await expect(createModelPort({fetch:fake,timeoutMs:30}).generate({apiKey:'synthetic-key',model:'fixture',system:'rules',data:'data'})).rejects.toThrow();expect(Date.now()-started).toBeLessThan(1000);expect(signal?.aborted).toBe(true);expect(cancelled).toBe(true);expect(calls).toBe(1)})
+ it('refuses oversized body before SDK JSON parsing and cancels the stream',async()=>{let cancelled=false;const fake:typeof fetch=async()=>new Response(new ReadableStream({start(c){c.enqueue(new Uint8Array(70000))},cancel(){cancelled=true}}),{headers:{'content-type':'application/json'}});await expect(createModelPort({fetch:fake}).generate({apiKey:'synthetic-key',model:'fixture',system:'rules',data:'data'})).rejects.toThrow();expect(cancelled).toBe(true)})
+})
+
+it('uses the absolute caller deadline for the full body rather than granting fresh8seconds',async()=>{let cancelled=false;const fake:typeof fetch=async()=>new Response(new ReadableStream({cancel(){cancelled=true}}),{headers:{'content-type':'application/json'}});const now=Date.now();await expect(createModelPort({fetch:fake}).generate({apiKey:'synthetic-key',model:'fixture',system:'rules',data:'data',deadlineAt:now+30})).rejects.toThrow();expect(cancelled).toBe(true);expect(Date.now()-now).toBeLessThan(1000)})

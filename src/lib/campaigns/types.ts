@@ -96,6 +96,7 @@ export interface EmailVariant {
   subject: string
   body: string
   isPlainText: boolean
+  bodyText?: string | null
   stats?: VariantStats
 }
 
@@ -159,8 +160,8 @@ export const DEFAULT_CAMPAIGN_SETTINGS: CampaignSettings = {
   sendingWindowEnd: 17,
   timezone: 'America/New_York',
   skipWeekends: true,
-  trackOpens: true,
-  trackClicks: true,
+  trackOpens: false,
+  trackClicks: false,
   unsubscribeLink: true,
   stopOnReply: true,
   stopOnBounce: true,

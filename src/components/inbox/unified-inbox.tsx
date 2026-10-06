@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -67,6 +67,7 @@ interface ThreadDetailResponse {
   lead: LeadInfo | null
   campaign: CampaignInfo | null
   mailbox: { id: string; email: string; firstName: string | null; lastName: string | null } | null
+  replyReadiness: { ready: boolean; reason?: string | null; sourceReplyId?: string; controlRevision?: number; control?: {revision:number;mode:string} }
   timeline: ThreadMessage[]
   navigation: ThreadNavigation
 }
@@ -90,6 +91,8 @@ interface UnifiedInboxProps {
  * UnifiedInbox - Main inbox component with three-column layout
  */
 export function UnifiedInbox({ className }: UnifiedInboxProps) {
+  const threadRequest = useRef(0)
+  const activeThreadId = useRef<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -171,6 +174,8 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
 
   // Fetch thread detail
   const fetchThread = useCallback(async (threadId: string) => {
+    const requestVersion = ++threadRequest.current
+    activeThreadId.current = threadId
     try {
       setLoadingThread(true)
       const response = await fetch(`/api/inbox/${threadId}`)
@@ -178,6 +183,7 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
 
       if ('error' in data) throw new Error((data as { error: string }).error)
 
+      if(requestVersion !== threadRequest.current) return
       setSelectedThread(data)
 
       // Mark as read in local state
@@ -185,10 +191,11 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
         prev.map((t) => (t.id === threadId ? { ...t, hasUnread: false } : t))
       )
     } catch (error) {
+      if(requestVersion !== threadRequest.current) return
       console.error('Failed to fetch thread:', error)
       toast.error('Failed to load conversation')
     } finally {
-      setLoadingThread(false)
+      if(requestVersion === threadRequest.current) setLoadingThread(false)
     }
   }, [])
 
@@ -204,6 +211,18 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
       fetchThread(threadId)
     }
   }, [searchParams, threads.length, fetchThread])
+
+  // Open thread
+  const openThread = useCallback((thread: ThreadListItem) => {
+    fetchThread(thread.id)
+    router.push(`/inbox?thread=${thread.id}`, { scroll: false })
+  }, [fetchThread,router])
+
+  // Close thread
+  const closeThread = useCallback(() => {
+    activeThreadId.current=null;threadRequest.current++;setSelectedThread(null)
+    router.push('/inbox', { scroll: false })
+  }, [router])
 
   // Keyboard navigation
   useEffect(() => {
@@ -260,19 +279,7 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [threads, selectedThread])
-
-  // Open thread
-  const openThread = (thread: ThreadListItem) => {
-    fetchThread(thread.id)
-    router.push(`/inbox?thread=${thread.id}`, { scroll: false })
-  }
-
-  // Close thread
-  const closeThread = () => {
-    setSelectedThread(null)
-    router.push('/inbox', { scroll: false })
-  }
+  }, [threads, selectedThread,closeThread,openThread])
 
   // Navigate threads
   const handleNavigate = (direction: 'prev' | 'next') => {
@@ -406,21 +413,40 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
   const handleReply = async (message: string) => {
     if (!selectedThread) return
 
+    let definiteRejection = false
+    let heldResponse = false
     try {
       const response = await fetch(
         `/api/inbox/${selectedThread.thread.id}/reply`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message,sourceReplyId:selectedThread.replyReadiness.sourceReplyId,controlRevision:selectedThread.replyReadiness.controlRevision }),
         }
       )
 
-      if (!response.ok) throw new Error('Failed to send')
+      if (!response.ok) {
+        definiteRejection = [400,401,403,409,503].includes(response.status)
+        const payload = await response.json().catch(() => null)
+        const detail = payload?.error?.message ?? payload?.error
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to send')
+      }
 
-      toast.success('Reply sent')
-      fetchThread(selectedThread.thread.id)
+      const result = await response.json()
+      if(!result.accepted) {
+        heldResponse = true
+        const reason=`Reply held; do not resend. Reference ${result.attemptId ?? 'unavailable'}. ${result.code ?? result.receipt?.code ?? result.settlement?.status ?? 'unknown outcome'}`
+        if(activeThreadId.current===selectedThread.thread.id) setSelectedThread(current=>current?.thread.id===selectedThread.thread.id?{...current,replyReadiness:{...current.replyReadiness,ready:false,reason}}:current)
+        throw new Error(reason)
+      }
+      toast.success('SMTP accepted the reply; delivery is not yet confirmed')
+      if(activeThreadId.current === selectedThread.thread.id) fetchThread(selectedThread.thread.id)
     } catch (error) {
+      if(!definiteRejection && !heldResponse) {
+        const reason=`Reply response uncertain; do not resend until server reconciliation. Reference ${selectedThread.thread.id}/${selectedThread.replyReadiness.sourceReplyId ?? 'unknown inbound'}.`
+        if(activeThreadId.current===selectedThread.thread.id) setSelectedThread(current=>current?.thread.id===selectedThread.thread.id?{...current,replyReadiness:{...current.replyReadiness,ready:false,reason}}:current)
+        throw new Error(reason)
+      }
       console.error('Send reply failed:', error)
       throw error // Re-throw to let composer handle it
     }
@@ -489,6 +515,7 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
             <MessageDetailSkeleton />
           ) : (
             <MessageDetail
+              key={selectedThread.thread.id}
               thread={getThreadDetail()!}
               messages={selectedThread.timeline}
               lead={selectedThread.lead}
@@ -504,6 +531,9 @@ export function UnifiedInbox({ className }: UnifiedInboxProps) {
               isLoading={loadingThread}
               showLeadInfo={showLeadInfo}
               onToggleLeadInfo={() => setShowLeadInfo(!showLeadInfo)}
+              replyTransportAvailable={selectedThread.replyReadiness?.ready ?? false}
+              replyDisabledReason={selectedThread.replyReadiness?.reason ?? 'Reply setup required'}
+              onTakeover={async()=>{try{const id=selectedThread.thread.id;const response=await fetch(`/api/inbox/${id}/control`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'human',expectedRevision:selectedThread.replyReadiness.control?.revision})});const result=await response.json();if(!response.ok||!result.allowed){toast.error(result.reason??result.error?.message??'Takeover failed');return}if(activeThreadId.current===id)fetchThread(id)}catch{toast.error('Takeover failed; reload the conversation before trying again')}}}
             />
           )}
         </div>

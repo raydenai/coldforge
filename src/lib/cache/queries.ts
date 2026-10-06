@@ -109,7 +109,7 @@ export async function getCachedDashboardStats(
     .eq('organization_id', organizationId)
 
   const emailAccounts = accounts?.length || 0
-  const warmingAccounts = accounts?.filter((a: { warmup_enabled: boolean }) => a.warmup_enabled).length || 0
+  const warmingAccounts = accounts?.filter(a => a.warmup_enabled).length || 0
 
   // Fetch emails sent today
   const today = new Date()

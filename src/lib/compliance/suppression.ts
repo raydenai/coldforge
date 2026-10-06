@@ -1,25 +1,7 @@
-/**
- * Global suppression ledger (SEC-005) and pre-send eligibility (SEC-006, CAM-007).
- *
- * The `email_suppressions` table already existed (migration 010) and
- * `src/lib/smtp/queue.ts` already checked it before sending. Three gaps made
- * that insufficient:
- *
- *   1. The check was a bare SELECT taken before the send, so a suppression
- *      written between check and send was missed. That is a
- *      time-of-check/time-of-use gap on a legal control.
- *   2. Only the `email_queue` path consulted it. `src/lib/warmup/*`,
- *      `inbox/[id]/reply` and `replies/[id]/respond` call `sendEmail()` directly.
- *   3. Nothing ever wrote an `unsubscribe` reason, because no unsubscribe
- *      endpoint existed.
- *
- * This module is the single entry point for both directions: recording a
- * suppression, and asking whether a send may proceed.
- */
-
-import { createAdminClient } from '@/lib/supabase/admin'
-
-/** Reasons accepted by the email_suppressions CHECK constraint (migration 010). */
+/** Organization-scoped durable suppression contract from migration023. */
+import { createSuppressionClient } from './suppression-database'
+import { z } from 'zod'
+/** Reasons accepted by migration023. */
 export type SuppressionReason =
   | 'hard_bounce'
   | 'soft_bounce'
@@ -47,6 +29,7 @@ const PERMANENT_REASONS: ReadonlySet<SuppressionReason> = new Set([
 export interface SuppressionRecord {
   email: string
   workspaceId: string | null
+  leadId?: string
   reason: SuppressionReason
   source?: string
   notes?: string
@@ -67,79 +50,43 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
-/**
- * Record a suppression.
- *
- * `workspaceId: null` writes a GLOBAL suppression that stops mail for every
- * tenant. Unsubscribes and complaints are recorded against the workspace that
- * sent the mail; spam traps and hard bounces are candidates for global.
- *
- * Uses the admin client deliberately: a recipient actioning an unsubscribe is
- * unauthenticated, so RLS must be bypassed for this write. That is the whole
- * reason this lives behind a narrow module rather than being inlined.
- */
+/** Persist an organization-scoped suppression. Legacy workspaceId means organizationId; null is rejected. */
 export async function recordSuppression(
   record: SuppressionRecord
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = createAdminClient()
-  const email = normalizeEmail(record.email)
-
-  const { error } = await supabase.from('email_suppressions').upsert(
-    {
-      email,
-      workspace_id: record.workspaceId,
-      reason: record.reason,
-      source: record.source ?? null,
-      notes: record.notes ?? null,
-      original_event_id: record.originalEventId ?? null,
-      is_active: true,
-      expires_at: record.expiresAt?.toISOString() ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'workspace_id,email' }
-  )
-
-  if (error) {
-    // Never log the address itself.
-    console.error('[suppression] failed to record', {
-      reason: record.reason,
-      workspaceId: record.workspaceId,
-      code: error.code,
+  try {
+    if (!record.workspaceId) return { success: false, error: 'Organization is required' }
+    const supabase = createSuppressionClient()
+    const { data, error } = await supabase.rpc('record_outreach_suppression', {
+      p_organization_id: record.workspaceId, p_email: record.email, p_reason: record.reason,
+      p_source: record.source ?? 'coldforge', p_notes: record.notes ?? null,
+      p_original_event_id: record.originalEventId ?? null, p_expires_at: record.expiresAt?.toISOString() ?? null,
+      p_lead_id: record.leadId ?? null,
     })
-    return { success: false, error: error.message }
-  }
-
-  return { success: true }
+    return !error && data === true ? { success: true } : { success: false, error: 'Suppression persistence failed' }
+  } catch { return { success: false, error: 'Suppression storage unavailable' } }
 }
 
-/**
- * Is this address suppressed for this tenant, right now?
- *
- * Matches a row that is either global (`workspace_id IS NULL`) or belongs to the
- * tenant, is active, and has not expired.
- *
- * This is the READ used for UI and pre-flight checks. It is NOT sufficient as
- * the final gate before a send — use `claimSendSlot()` for that.
- */
+/** Tenant-scoped preflight lookup; durable dispatch must separately enforce the final send boundary. */
 export async function isSuppressed(
   email: string,
   workspaceId: string
 ): Promise<EligibilityResult> {
-  const supabase = createAdminClient()
+  try {
+  const supabase = createSuppressionClient()
   const nowIso = new Date().toISOString()
 
   const { data, error } = await supabase
-    .from('email_suppressions')
+    .from('outreach_suppressions')
     .select('reason, expires_at')
-    .eq('email', normalizeEmail(email))
-    .eq('is_active', true)
-    .or(`workspace_id.is.null,workspace_id.eq.${workspaceId}`)
+    .eq('normalized_email', normalizeEmail(email))
+    .eq('organization_id', workspaceId)
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .limit(1)
 
   if (error) {
     // Fail closed. A suppression lookup that errors must never be read as
-    // "not suppressed" — that is how a legal control silently becomes a no-op.
+    // "not suppressed" — an unavailable lookup is never interpreted as permission.
     console.error('[suppression] lookup failed, failing closed', { code: error.code })
     return { eligible: false, reason: 'error', detail: 'suppression lookup failed' }
   }
@@ -148,39 +95,23 @@ export async function isSuppressed(
   if (hit) {
     return {
       eligible: false,
-      reason: hit.reason as SuppressionReason,
+      reason: suppressionReasonSchema.parse(hit.reason),
       detail: 'suppressed',
     }
   }
 
   return { eligible: true }
+  } catch { return { eligible: false, reason: 'error', detail: 'suppression storage unavailable' } }
 }
+
+const suppressionReasonSchema = z.enum(['hard_bounce','soft_bounce','complaint','unsubscribe','spam_trap','invalid','role_based','manual'])
 
 /** Whether a reason permanently stops commercial mail. */
 export function isPermanentReason(reason: SuppressionReason): boolean {
   return PERMANENT_REASONS.has(reason)
 }
 
-/**
- * Reasons that block even a direct 1:1 reply to an inbound message.
- *
- * This is deliberately NARROWER than the campaign gate, and the distinction is a
- * policy decision worth stating plainly:
- *
- *   - `complaint` / `spam_trap` — the recipient reported us. Sending anything
- *     further, including a reply, compounds the reputation and legal damage.
- *   - `hard_bounce` / `invalid` — the address does not accept mail. Retrying
- *     wastes reputation on a known-bad recipient.
- *   - `unsubscribe` is NOT here. An opt-out withdraws consent for *commercial*
- *     mail. If that person then writes to us, answering their own message is a
- *     transactional response they initiated, not a marketing touch. Refusing to
- *     answer a customer who emailed us would be poor service and is not required
- *     by CAN-SPAM.
- *   - `role_based` / `manual` / `soft_bounce` are campaign-targeting decisions,
- *     not conversation bans.
- *
- * If policy changes, change it here — every reply path reads this one set.
- */
+/** Product policy: complaints and unusable addresses also block direct inbound replies. */
 const REPLY_BLOCKING_REASONS: ReadonlySet<SuppressionReason> = new Set([
   'complaint',
   'spam_trap',
@@ -205,7 +136,7 @@ export async function canReplyToInbound(
   // Not suppressed at all.
   if (result.eligible) return result
 
-  const reason = result.reason as SuppressionReason
+  const reason = suppressionReasonSchema.parse(result.reason)
 
   if (REPLY_BLOCKING_REASONS.has(reason)) {
     return { eligible: false, reason, detail: 'reply blocked by suppression' }

@@ -1,3 +1,4 @@
+import { assertSameOrigin, winnrErrorResponse } from '@/app/api/winnr/_shared'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -14,8 +15,39 @@ interface LeadImportRow {
   customFields?: Record<string, string>
 }
 
+/**
+ * Build an update for an existing lead from the explicitly supplied import
+ * fields only. Omitted fields are left untouched; an explicitly supplied empty
+ * value clears that field. List membership and custom metadata are only written
+ * when the caller supplies them.
+ */
+function buildExistingLeadUpdate(lead: LeadImportRow, listId?: string): Record<string, unknown> {
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const textFields: Array<[keyof LeadImportRow, string]> = [
+    ['firstName', 'first_name'],
+    ['lastName', 'last_name'],
+    ['company', 'company'],
+    ['title', 'title'],
+    ['phone', 'phone'],
+    ['linkedinUrl', 'linkedin_url'],
+  ]
+  for (const [input, column] of textFields) {
+    if (!Object.prototype.hasOwnProperty.call(lead, input)) continue
+    const value = lead[input]
+    if (typeof value !== 'string') continue
+    update[column] = value ? value : null
+  }
+  if (Object.prototype.hasOwnProperty.call(lead, 'customFields')) {
+    const value = lead.customFields
+    update.custom_fields = value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+  }
+  if (listId) update.list_id = listId
+  return update
+}
+
 // POST /api/leads/import - Bulk import leads from array
 export async function POST(request: NextRequest) {
+  try { assertSameOrigin(request) } catch (error) { return winnrErrorResponse(error) }
   try {
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -99,20 +131,10 @@ export async function POST(request: NextRequest) {
             }
 
             if (updateExisting) {
-              // Update existing lead using admin client
+              // Update existing lead using admin client, preserving omitted fields.
               const { error: updateError } = await adminClient
                 .from('leads')
-                .update({
-                  first_name: lead.firstName || null,
-                  last_name: lead.lastName || null,
-                  company: lead.company || null,
-                  title: lead.title || null,
-                  phone: lead.phone || null,
-                  linkedin_url: lead.linkedinUrl || null,
-                  custom_fields: lead.customFields || {},
-                  list_id: listId || null,
-                  updated_at: new Date().toISOString(),
-                })
+                .update(buildExistingLeadUpdate(lead, listId))
                 .eq('id', existing.id)
 
               if (updateError) {

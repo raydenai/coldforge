@@ -26,11 +26,13 @@ export default function RegisterPage() {
     try {
       const supabase = createClient()
 
-      // Create auth user
+      // Create auth user. The confirmation link returns to our same-origin
+      // PKCE callback, which exchanges the code for a cookie-backed session.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             full_name: fullName,
             organization_name: organizationName,
@@ -44,9 +46,8 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        // Create organization and user profile will be handled by database trigger
-        // For now, we'll show success message
-        router.push('/dashboard')
+        // Existing membership is preserved; first users complete the transactional server bootstrap.
+        router.push(authData.session ? '/onboarding' : '/login?verify=email')
         router.refresh()
       }
     } catch {

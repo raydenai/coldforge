@@ -4,10 +4,6 @@ const nextConfig: NextConfig = {
   // Required for Docker deployment
   output: 'standalone',
 
-  // Enable instrumentation for Sentry and monitoring
-  experimental: {
-    instrumentationHook: true,
-  },
 
   async headers() {
     return [

@@ -4,6 +4,8 @@ The Queen appends decisions here and creates a full ADR when a decision changes 
 
 | Date | Decision | Reason | Evidence/ADR | Revisit |
 |---|---|---|---|---|
+| 2026-10-05 | Owner selected Winnr for the launch, including provider warming; ColdForge retains campaign policy/sequencing | Explicit instruction: "Yes lets go full with winnr" | ADR-007 updated; Winnr launch plan and current API contract | After controlled Winnr integration tests |
+| 2026-10-05 | New Winnr integration uses live organizations/users; defer workspace conversion | Read-only live schema has 14 tables and no workspace identity | 2026-10-05 launch audit | Reconciled schema migration with release evidence |
 | 2026-08-22 | Use Winnr for email infrastructure | Removes domain/DNS/mailbox/warmup work from the critical path | Product architecture and research notes | After Release A pilot |
 | 2026-08-22 | Build the native Upmax sequencer; keep Smartlead as parity/fallback | Goal is to replace Instantly without duplicating infrastructure | Product architecture | **REOPENED 2026-08-24 — see ADR-007** |
 | 2026-08-24 | REOPENED: campaign execution build-vs-buy | CLAUDE.md:18 requires an ADR proving the vendor cannot meet a release requirement before rebuilding a vendor capability. No such ADR existed; the 2026-08-22 row recorded the decision without the proof. Items 7+8 are ~16-22 days of undifferentiated sequencer work. | ADR-007 (proposed, awaiting owner decision) | Before items 7/8 begin |
