@@ -1,3 +1,4 @@
+import { psqlExecutable } from '../helpers/postgres-fixture'
 /**
  * Disposable PostgreSQL proof for migration 028.
  *
@@ -24,7 +25,7 @@ function sql(statement: string) {
     throw new Error('Unsafe lead validation fixture URL')
   }
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('PG')))
-  return execFileSync('/opt/homebrew/bin/psql', ['-X', '-v', 'ON_ERROR_STOP=1', '--dbname', url, '-At'], {
+  return execFileSync(psqlExecutable(), ['-X', '-v', 'ON_ERROR_STOP=1', '--dbname', url, '-At'], {
     input: statement,
     env,
     encoding: 'utf8',

@@ -1,3 +1,4 @@
+import { psqlExecutable } from '../helpers/postgres-fixture'
 import { beforeAll,beforeEach,describe,it,expect } from 'vitest'
 import { execFile } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -5,7 +6,7 @@ import { sendManualReply } from '@/lib/outreach/replies'
 import { createWinnrSmtpTransport } from '@/lib/winnr/smtp-transport'
 import { authorizeEmailDispatchClaim,type DispatchRepository } from '@/lib/outreach/dispatch'
 const url=process.env.OUTREACH_REPLIES_TEST_DATABASE_URL
-function sql(statement:string):Promise<{code:number;out:string;err:string}>{if(!url)throw Error('Explicit reply fixture required');const u=new URL(url);if(!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!=='127.0.0.1'||u.port!=='55439'||u.pathname!=='/outreach_replies_test'||u.search)throw Error('Unsafe reply fixture');const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('PG')));return new Promise(resolve=>{const child=execFile('/opt/homebrew/bin/psql',['-X','-q','-At','-v','ON_ERROR_STOP=1','--dbname',url],{env},(error,out,err)=>resolve({code:error?1:0,out:out.trim(),err}));child.stdin?.end(statement)})}
+function sql(statement:string):Promise<{code:number;out:string;err:string}>{if(!url)throw Error('Explicit reply fixture required');const u=new URL(url);if(!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!=='127.0.0.1'||u.port!=='55439'||u.pathname!=='/outreach_replies_test'||u.search)throw Error('Unsafe reply fixture');const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('PG')));return new Promise(resolve=>{const child=execFile(psqlExecutable(),['-X','-q','-At','-v','ON_ERROR_STOP=1','--dbname',url],{env},(error,out,err)=>resolve({code:error?1:0,out:out.trim(),err}));child.stdin?.end(statement)})}
 const ids={org:'11111111-1111-4111-8111-111111111111',actor:'22222222-2222-4222-8222-222222222222',conn:'33333333-3333-4333-8333-333333333333',account:'44444444-4444-4444-8444-444444444444',lead:'55555555-5555-4555-8555-555555555555',campaign:'66666666-6666-4666-8666-666666666666',endpoint:'77777777-7777-4777-8777-777777777777'}
 const quote=(v:unknown)=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb"
 let threadId:string,sourceReplyId:string
